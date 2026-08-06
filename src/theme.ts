@@ -11,6 +11,14 @@ export const theme = {
     textSecondary: '#9AA6B8',
     textTertiary: '#5F6B7E',
     accent: '#3B82F6',
+
+    /** Figma variable `primary/950` — the pill's base fill. */
+    primary950: '#0F0620',
+    /** The inner-glow purple; not yet a Figma variable, raw hex in the design. */
+    glow: '#6D5CF0',
+    /** Tail colour of the label's gradient. */
+    labelGradientEnd: '#8375E5',
+    hairline: 'rgba(82, 82, 94, 0.2)',
   },
   space: {
     xs: 4,

@@ -2,6 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { NegotiateButton } from './src/specimens/NegotiateButton';
 import { theme } from './src/theme';
 
 export default function App() {
@@ -16,9 +17,11 @@ export default function App() {
           <Text style={styles.subtitle}>Button experiments</Text>
 
           <View style={styles.bench}>
-            <Text style={styles.placeholder}>
-              No specimens yet — drop a button in here.
-            </Text>
+            <Text style={styles.specimenName}>Negotiate flight</Text>
+            <NegotiateButton onPress={() => {}} />
+
+            <Text style={styles.specimenName}>Disabled</Text>
+            <NegotiateButton disabled />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -51,8 +54,10 @@ const styles = StyleSheet.create({
     marginTop: theme.space.xl,
     gap: theme.space.lg,
   },
-  placeholder: {
+  specimenName: {
     color: theme.color.textTertiary,
-    fontSize: 14,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });
