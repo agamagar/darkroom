@@ -33,11 +33,18 @@ export type Screen = (typeof SCREENS)[number];
 export const GYROS = ['off', 'medium', 'extreme'] as const;
 export type Gyro = (typeof GYROS)[number];
 
-/** Max glow offset in pt at full tilt, per level. */
+/**
+ * Max glow offset in pt at full tilt, per level.
+ *
+ * Sized against what is being moved, not against the button: the wash
+ * ellipse is ~240pt wide inside a 272pt pill (wider still on molten, which
+ * spreads 2.4x). A 10pt shift is 4% of that — below the perceptual floor for
+ * a soft gradient, which is why the first pass read as nothing happening.
+ */
 export const GYRO_AMPLITUDE: Record<Gyro, number> = {
   off: 0,
-  medium: 10,
-  extreme: 26,
+  medium: 18,
+  extreme: 48,
 };
 
 export type Selection = {

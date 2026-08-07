@@ -1,8 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useFonts } from 'expo-font';
-import { DeviceMotion } from 'expo-sensors';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import {
   Gesture,
@@ -12,7 +11,6 @@ import {
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
 
 import { BenchSheet, SHEET_HEIGHT } from './src/bench/BenchSheet';
@@ -22,10 +20,10 @@ import {
 } from './src/bench/NegotiationScreen';
 import { ScreenBackdrop } from './src/bench/screens';
 import { SegmentedRow } from './src/bench/SegmentedRow';
+import { useGlowTilt } from './src/bench/useGlowTilt';
 import { VariantPicker } from './src/bench/VariantPicker';
 import {
   GYROS,
-  GYRO_AMPLITUDE,
   INITIAL_SELECTION,
   SCREENS,
   STATES,
@@ -65,32 +63,9 @@ export default function App() {
     'StackSansHeadline-Light': require('./src/assets/fonts/StackSansHeadline-Light.ttf'),
   });
 
-  // Gyroscope -> glow offset. The device's tilt leans the specimen's light:
-  // roll (gamma) moves it sideways, pitch (beta, neutral at ~40deg in the
-  // hand) moves it vertically. The listener only runs while the setting is
-  // on; 'off' recentres and unsubscribes.
-  const glowX = useSharedValue(0);
-  const glowY = useSharedValue(0);
-  useEffect(() => {
-    const amplitude = GYRO_AMPLITUDE[selection.gyro];
-    if (amplitude === 0) {
-      glowX.value = withTiming(0, { duration: 200 });
-      glowY.value = withTiming(0, { duration: 200 });
-      return;
-    }
-    DeviceMotion.setUpdateInterval(50);
-    const sub = DeviceMotion.addListener(({ rotation }) => {
-      if (!rotation) return;
-      const clamp = (v: number) => Math.max(-1, Math.min(1, v));
-      glowX.value = withTiming(clamp(rotation.gamma / 0.6) * amplitude, {
-        duration: 80,
-      });
-      glowY.value = withTiming(clamp((rotation.beta - 0.7) / 0.6) * amplitude, {
-        duration: 80,
-      });
-    });
-    return () => sub.remove();
-  }, [selection.gyro, glowX, glowY]);
+  // Device tilt leans the specimen's light. See useGlowTilt for why this is
+  // a hook and not four lines inline.
+  const glowShift = useGlowTilt(selection.gyro);
 
   // The sheet writes 0..1 here; the stage reads it. Split view means the
   // stage gives up half the sheet's height and the specimen stays visible
@@ -106,7 +81,7 @@ export default function App() {
       // value at mount picks the new one up.
       key={`${selection.state}-${selection.type}`}
       onPress={() => {}}
-      glowShift={{ x: glowX, y: glowY }}
+      glowShift={glowShift}
       {...propsFor(selection)}
     />
   );

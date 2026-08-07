@@ -8,7 +8,10 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.darkroom"
+      "bundleIdentifier": "com.anonymous.darkroom",
+      "infoPlist": {
+        "NSMotionUsageDescription": "Dark Room tilts a button's light with the device, to judge how the glow reads in the hand."
+      }
     },
     "android": {
       "adaptiveIcon": {
