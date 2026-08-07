@@ -117,6 +117,13 @@ type VariantSpec = {
    * the press: absent at rest, full while held.
    */
   dish?: boolean;
+  /**
+   * Node 51:92's top-edge light, rebuilt as a gradient so it can take the
+   * tilt (a CSS inset shadow is a string, and not animatable). See
+   * InsetThrow — the stops ARE the measured render, so this is the same
+   * picture the boxShadow drew, only now it can move.
+   */
+  insetThrow?: boolean;
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -243,8 +250,8 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     pill: {
       backgroundColor: theme.color.primary950,
       borderWidth: 0,
-      boxShadow: 'inset 0px 8px 36px 0px #4D00FF',
     },
+    insetThrow: true,
     dish: true,
     label: {
       kind: 'gradient',
@@ -361,6 +368,7 @@ export function NegotiateButton({
         }}
         style={[styles.pill, spec.pill, disabled && styles.pillDisabled]}>
         {spec.violetBase && <VioletBase />}
+        {spec.insetThrow && <InsetThrow shift={glowShift} />}
         {/*
           Both wash layers share one shifted parent so the gyroscope moves
           them as a single light source. The lit layer is the glow again at
@@ -573,6 +581,82 @@ function GradientBorderRing() {
           stroke="url(#borderRing)"
           strokeWidth={1.5}
           fill="none"
+        />
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * Node 51:92's `inset 0 8px 36px #4D00FF`, rebuilt as a vertical gradient.
+ *
+ * The stops are not invented — they are the pixel-diff measurements, each
+ * sampled alpha solved from observed = a*#4D00FF + (1-a)*#0F0620 down the
+ * centreline. Reproducing the shadow this way costs nothing visually and
+ * buys the one thing a CSS shadow string cannot do: respond to tilt.
+ *
+ * Tilt rotates the throw axis rather than sliding it, so the lit band stays
+ * anchored to the rim and only its direction changes — the same reason the
+ * washes move their focal point instead of translating.
+ */
+const THROW_STOPS: [number, number][] = [
+  [0, 0.72],
+  [0.132, 0.48],
+  [0.25, 0.29],
+  [0.368, 0.148],
+  [0.485, 0.054],
+  [0.603, 0.018],
+  [0.72, 0.045],
+  [0.838, 0.135],
+  [1, 0.27],
+];
+
+const AnimatedSvgLinearGradient =
+  Animated.createAnimatedComponent(SvgLinearGradient);
+
+function InsetThrow({
+  shift,
+}: {
+  shift?: { x: SharedValue<number>; y: SharedValue<number> };
+}) {
+  const axis = useAnimatedProps(() => {
+    // Lean is expressed as a fraction of the frame, then halved: a full-tilt
+    // 30pt shift swings the axis about 5 degrees, which is plenty on a band
+    // this soft.
+    const dx = shift ? shift.x.value / FRAME.width / 2 : 0;
+    const dy = shift ? shift.y.value / FRAME.height / 2 : 0;
+    return {
+      x1: 0.5 + dx,
+      y1: dy,
+      x2: 0.5 - dx,
+      y2: 1 + dy,
+    };
+  });
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <AnimatedSvgLinearGradient
+            id="insetThrow"
+            x1="0.5"
+            y1="0"
+            x2="0.5"
+            y2="1"
+            animatedProps={axis}>
+            {THROW_STOPS.map(([offset, alpha]) => (
+              <Stop
+                key={offset}
+                offset={offset}
+                stopColor="#4D00FF"
+                stopOpacity={alpha}
+              />
+            ))}
+          </AnimatedSvgLinearGradient>
+        </Defs>
+        <Rect
+          width={FRAME.width}
+          height={FRAME.height}
+          fill="url(#insetThrow)"
         />
       </Svg>
     </View>
