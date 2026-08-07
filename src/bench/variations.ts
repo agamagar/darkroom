@@ -12,11 +12,13 @@ import type { NegotiateButtonProps } from '../specimens/NegotiateButton';
 export const STATES = ['default', 'pressed', 'inactive'] as const;
 export type State = (typeof STATES)[number];
 
+/**
+ * `outline`, `ghost` and `beacon` are hidden from the bench — their specs
+ * still live in NegotiateButton, so restoring one is a matter of adding its
+ * name back to this list.
+ */
 export const TYPES = [
   'gradient',
-  'outline',
-  'ghost',
-  'beacon',
   'eclipse',
   'ember',
   'molten',
@@ -47,11 +49,20 @@ export const GYRO_AMPLITUDE: Record<Gyro, number> = {
   extreme: 48,
 };
 
+/**
+ * The self-drawing arrow. It belongs to the icon slot, not to any one style,
+ * so the bench drives it across every variant rather than letting `drawn`
+ * own it. A second arrow from the Working File slots in as another value.
+ */
+export const ICONS = ['off', 'trend'] as const;
+export type Icon = (typeof ICONS)[number];
+
 export type Selection = {
   state: State;
   type: Type;
   screen: Screen;
   gyro: Gyro;
+  icon: Icon;
 };
 
 export const INITIAL_SELECTION: Selection = {
@@ -59,6 +70,7 @@ export const INITIAL_SELECTION: Selection = {
   type: 'gradient',
   screen: 'void',
   gyro: 'off',
+  icon: 'off',
 };
 
 /**
@@ -66,9 +78,14 @@ export const INITIAL_SELECTION: Selection = {
  * place means the specimen never learns about the bench — it keeps a plain
  * props API, and the bench does the adapting.
  */
-export function propsFor({ state, type }: Selection): Partial<NegotiateButtonProps> {
+export function propsFor({
+  state,
+  type,
+  icon,
+}: Selection): Partial<NegotiateButtonProps> {
   return {
     variant: type,
+    icon,
     forcePressed: state === 'pressed',
     disabled: state === 'inactive',
   };

@@ -224,7 +224,6 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       backgroundColor: 'transparent',
       borderWidth: 0,
       boxShadow: 'inset -8px -16px 40px 0px #3E01C8',
-      gap: 12,
     },
     violetBase: true,
     drawIcon: true,
@@ -292,8 +291,13 @@ export type NegotiateButtonProps = {
    * press is far too brief to allow.
    */
   forcePressed?: boolean;
-  /** Which self-drawing arrow the icon-bearing variants use. */
-  arrow?: ArrowKind;
+  /**
+   * The icon slot. The arrow is a property of the button, not of any one
+   * style, so the bench drives it across every variant; `'off'` suppresses
+   * it even on variants whose own spec asks for it. Omit to let the spec
+   * decide (which is what a consumer outside the bench wants).
+   */
+  icon?: ArrowKind | 'off';
   /**
    * Live offset (pt) applied to the glow layers — the bench's gyroscope
    * drives these so the light leans with the device. The pill itself never
@@ -310,11 +314,14 @@ export function NegotiateButton({
   disabled = false,
   haptics = true,
   forcePressed = false,
-  arrow = 'trend',
+  icon,
   glowShift,
   style,
 }: NegotiateButtonProps) {
   const spec = VARIANTS[variant];
+  // An explicit `icon` wins over the variant's own drawIcon flag.
+  const showIcon = icon === undefined ? !!spec.drawIcon : icon !== 'off';
+  const iconKind: ArrowKind = icon && icon !== 'off' ? icon : 'trend';
 
   // 0 = at rest, 1 = held down. One value drives both the scale and the glow
   // so they can never disagree about the button's state.
@@ -388,7 +395,7 @@ export function NegotiateButton({
           </Animated.View>
         )}
         {spec.mesh && <DotMesh />}
-        {spec.drawIcon && <NegotiateGlyph kind={arrow} />}
+        {showIcon && <NegotiateGlyph kind={iconKind} />}
         <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
         {spec.gradientBorder && <GradientBorderRing />}
       </Pressable>
@@ -817,7 +824,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    // The design's icon-to-label gap; harmless when there is no icon.
+    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 24,
     borderRadius: theme.radius.lg,

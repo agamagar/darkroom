@@ -27,7 +27,7 @@ import { theme } from '../theme';
  * you change it.
  */
 
-export const SHEET_HEIGHT = 400;
+export const SHEET_HEIGHT = 460;
 const FLOATER_SIZE = 52;
 /** Drag past this fraction of the sheet height (or fling) and it dismisses. */
 const DISMISS_FRACTION = 0.33;

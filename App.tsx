@@ -24,6 +24,7 @@ import { useGlowTilt } from './src/bench/useGlowTilt';
 import { VariantPicker } from './src/bench/VariantPicker';
 import {
   GYROS,
+  ICONS,
   INITIAL_SELECTION,
   SCREENS,
   STATES,
@@ -79,7 +80,7 @@ export default function App() {
     <NegotiateButton
       // Remounts on selection change so a specimen that pins its press
       // value at mount picks the new one up.
-      key={`${selection.state}-${selection.type}`}
+      key={`${selection.state}-${selection.type}-${selection.icon}`}
       onPress={() => {}}
       glowShift={glowShift}
       {...propsFor(selection)}
@@ -154,6 +155,12 @@ export default function App() {
           options={SCREENS}
           value={selection.screen}
           onChange={(screen) => setSelection((s) => ({ ...s, screen }))}
+        />
+        <SegmentedRow
+          label="Icon"
+          options={ICONS}
+          value={selection.icon}
+          onChange={(icon) => setSelection((s) => ({ ...s, icon }))}
         />
         <SegmentedRow
           label="Motion"
