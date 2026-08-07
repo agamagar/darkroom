@@ -503,7 +503,37 @@ export function NegotiateButton({
     ],
   }));
 
-  const litStyle = useAnimatedStyle(() => ({ opacity: press.value }));
+  /**
+   * The hold clock — neon's paradigm, promoted system-wide. Press-in starts
+   * it from zero, it repeats for as long as the finger stays down, release
+   * cancels and rewinds. Every variant's lit layer breathes on it (a ±15%
+   * sine around 0.85), so no pressed state is ever a still image: glows
+   * pulse, the dish swells, ember's band shimmers — each in its own
+   * material, all from one clock. Reduce Motion pins the breath at full.
+   */
+  const holdT = useSharedValue(0);
+  useAnimatedReaction(
+    () => press.value > 0.05,
+    (active, prev) => {
+      if (active === prev) return;
+      if (active) {
+        holdT.value = 0;
+        holdT.value = withRepeat(
+          withTiming(1, { duration: 2400, easing: Easing.linear }),
+          -1,
+        );
+      } else {
+        cancelAnimation(holdT);
+        holdT.value = withTiming(0, { duration: 200 });
+      }
+    },
+  );
+  const litStyle = useAnimatedStyle(() => {
+    const breath = reducedMotion
+      ? 1
+      : 0.85 + 0.15 * Math.sin(holdT.value * 2 * Math.PI);
+    return { opacity: press.value * breath };
+  });
   /** Inverse of litStyle — for chrome the press must REMOVE, not add. */
   const dimStyle = useAnimatedStyle(() => ({ opacity: 1 - press.value }));
   /**
@@ -548,12 +578,19 @@ export function NegotiateButton({
       { translateY: (glowShift?.y.value ?? 0) * 1.6 },
     ],
   }));
-  /** Chrome sheen: tilt slides the reflection, the press flicks it across. */
+  /**
+   * Chrome sheen: tilt slides the reflection; holding sweeps it back and
+   * forth on the hold clock — polished metal turning under the light for as
+   * long as the finger stays down, still the moment it lifts.
+   */
   const sheenStyle = useAnimatedStyle(() => ({
     transform: [
       {
         translateX:
-          (glowShift ? glowShift.x.value * 5 : 0) + press.value * 90 - 45,
+          (glowShift ? glowShift.x.value * 5 : 0) +
+          (reducedMotion
+            ? 0
+            : Math.sin(holdT.value * 2 * Math.PI) * 60 * press.value),
       },
       { rotate: '18deg' },
     ],
