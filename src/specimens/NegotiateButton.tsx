@@ -78,7 +78,12 @@ export type NegotiateButtonVariant =
   | 'ember'
   | 'molten'
   | 'drawn'
-  | 'concave';
+  | 'concave'
+  | 'safelight'
+  | 'neon'
+  | 'carve'
+  | 'chrome'
+  | 'blueprint';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -132,6 +137,16 @@ type VariantSpec = {
    * picture the boxShadow drew, only now it can move.
    */
   insetThrow?: boolean;
+  /** Photo-paper label: latent at rest, develops to full under the press. */
+  developLabel?: boolean;
+  /** The light as the EDGE: a neon tube ring, overdriven by the press. */
+  neonRing?: boolean;
+  /** Matte deboss that forms while pressed — carve's the only lightless press. */
+  carveInset?: boolean;
+  /** Banded steel fill with a sheen that sweeps on tilt and press. */
+  chromeBase?: boolean;
+  /** Design-tool chrome (dashed border, handles, dims) that fades as the press renders. */
+  blueprintChrome?: boolean;
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -276,6 +291,84 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     },
   },
 
+  /**
+   * The app's namesake, literally: a photographic darkroom. Deep red
+   * safelight pooled low, and a label that behaves like photo paper — a
+   * latent image at rest, developed to full white by the press. The one
+   * variant where the light must NOT brighten (safelights cannot fog
+   * paper); the press develops the print instead.
+   */
+  safelight: {
+    pill: {
+      backgroundColor: '#170403',
+      borderColor: 'rgba(255, 69, 48, 0.12)',
+      boxShadow: 'inset 0px -12px 36px 0px rgba(214, 40, 24, 0.5)',
+    },
+    glow: { edge: 'bottom', color: '#D62818', core: '#FF6A45', rest: 0.55, lit: 0.55 },
+    developLabel: true,
+    label: { kind: 'solid', color: '#FFE8E2' },
+  },
+
+  /**
+   * The light leaves the face and becomes the edge: a neon tube around a
+   * near-empty interior, blooming outward. Pressing overdrives the tube.
+   */
+  neon: {
+    pill: {
+      backgroundColor: 'rgba(15, 6, 32, 0.35)',
+      borderWidth: 0,
+      boxShadow: '0px 0px 28px 0px rgba(109, 92, 240, 0.4)',
+    },
+    neonRing: true,
+    label: { kind: 'solid', color: '#F5F0FF' },
+  },
+
+  /**
+   * No light at all — the matte one. Raised out of the background by dual
+   * shadows; pressing fades the raise and forms a deboss. Material instead
+   * of luminance, as a control for the rest of the wheel.
+   */
+  carve: {
+    pill: {
+      backgroundColor: theme.color.surface,
+      borderColor: 'rgba(255, 255, 255, 0.04)',
+      boxShadow:
+        '-6px -8px 18px 0px rgba(160, 170, 255, 0.06), 8px 10px 22px 0px rgba(0, 0, 0, 0.55)',
+    },
+    carveInset: true,
+    label: { kind: 'solid', color: '#DDE3EE' },
+  },
+
+  /**
+   * Liquid metal: banded steel fill, dark label, and a diagonal sheen that
+   * sweeps with the gyroscope — the one variant where tilt moves a
+   * REFLECTION rather than a light. Pressing flicks the sheen across.
+   */
+  chrome: {
+    pill: {
+      backgroundColor: '#8E8E9A',
+      borderColor: 'rgba(255, 255, 255, 0.35)',
+      boxShadow: '0px 6px 24px 0px rgba(0, 0, 0, 0.5)',
+    },
+    chromeBase: true,
+    label: { kind: 'solid', color: '#17131C' },
+  },
+
+  /**
+   * The bench looking at itself: dashed selection border, corner handles
+   * and a dimension tag, over nothing. Pressing RENDERS the button — the
+   * annotations fade out exactly as the finished glow fades in.
+   */
+  blueprint: {
+    pill: {
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+    },
+    blueprintChrome: true,
+    glow: { edge: 'bottom', color: theme.color.glow, rest: 0, lit: 0.95 },
+    label: { kind: 'gradient' },
+  },
+
   /** Light under a door: the glow compressed into a hot band at the rim. */
   ember: {
     pill: {
@@ -352,6 +445,22 @@ export function NegotiateButton({
   }));
 
   const litStyle = useAnimatedStyle(() => ({ opacity: press.value }));
+  /** Inverse of litStyle — for chrome the press must REMOVE, not add. */
+  const dimStyle = useAnimatedStyle(() => ({ opacity: 1 - press.value }));
+  /** Photo-paper development: latent at rest, full under the press. */
+  const developStyle = useAnimatedStyle(() => ({
+    opacity: spec.developLabel ? 0.22 + press.value * 0.78 : 1,
+  }));
+  /** Chrome sheen: tilt slides the reflection, the press flicks it across. */
+  const sheenStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX:
+          (glowShift ? glowShift.x.value * 5 : 0) + press.value * 90 - 45,
+      },
+      { rotate: '18deg' },
+    ],
+  }));
 
   return (
     <Animated.View style={[styles.pillWrapper, pillStyle, style]}>
@@ -402,6 +511,34 @@ export function NegotiateButton({
             </Animated.View>
           </View>
         )}
+        {spec.chromeBase && (
+          <>
+            <ChromeBase />
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.litLayer, sheenStyle]}>
+              <ChromeSheen />
+            </Animated.View>
+          </>
+        )}
+        {spec.neonRing && (
+          <>
+            <NeonRing lit={false} />
+            <Animated.View pointerEvents="none" style={[styles.litLayer, litStyle]}>
+              <NeonRing lit />
+            </Animated.View>
+          </>
+        )}
+        {spec.carveInset && (
+          <Animated.View pointerEvents="none" style={[styles.litLayer, litStyle]}>
+            <CarveInset />
+          </Animated.View>
+        )}
+        {spec.blueprintChrome && (
+          <Animated.View pointerEvents="none" style={[styles.litLayer, dimStyle]}>
+            <BlueprintChrome />
+          </Animated.View>
+        )}
         {spec.dish && (
           <Animated.View
             pointerEvents="none"
@@ -411,7 +548,9 @@ export function NegotiateButton({
         )}
         {spec.mesh && <DotMesh />}
         {showIcon && <NegotiateGlyph kind={iconKind} />}
-        <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
+        <Animated.View style={developStyle}>
+          <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
+        </Animated.View>
         {spec.gradientBorder && <GradientBorderRing />}
       </Pressable>
     </Animated.View>
@@ -847,6 +986,113 @@ function NegotiateGlyph({ kind = 'trend' }: { kind?: ArrowKind }) {
   );
 }
 
+/** The neon tube: a bright ring hugging the rim, haloed inward and out. */
+function NeonRing({ lit }: { lit: boolean }) {
+  const inset = 2;
+  const w = FRAME.width - inset * 2;
+  const h = FRAME.height - inset * 2;
+  const id = lit ? 'neonLit' : 'neonRest';
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {/* Halo first, tube on top: three strokes at widening blur stand in
+            for a gaussian glow, which SVG strokes cannot have. */}
+        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+          stroke={theme.color.glow} strokeOpacity={lit ? 0.5 : 0.22} strokeWidth={9} />
+        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+          stroke={theme.color.indigo400} strokeOpacity={lit ? 0.85 : 0.5} strokeWidth={4.5} />
+        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+          stroke={lit ? '#FFFFFF' : '#D8CFFF'} strokeOpacity={lit ? 1 : 0.9} strokeWidth={1.6} id={id} />
+      </Svg>
+    </View>
+  );
+}
+
+/** carve's press: a deboss forming — dark falls from the top, light rises. */
+function CarveInset() {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <SvgLinearGradient id="carveIn" x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0" stopColor="#000000" stopOpacity={0.5} />
+            <Stop offset="0.4" stopColor="#000000" stopOpacity={0.1} />
+            <Stop offset="0.8" stopColor="#000000" stopOpacity={0} />
+            <Stop offset="1" stopColor="#AAB4FF" stopOpacity={0.1} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect width={FRAME.width} height={FRAME.height} fill="url(#carveIn)" />
+      </Svg>
+    </View>
+  );
+}
+
+/** Banded steel: the classic four-band metal ramp, vertical. */
+function ChromeBase() {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <SvgLinearGradient id="chromeBands" x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0" stopColor="#F2F2F6" />
+            <Stop offset="0.42" stopColor="#B9B9C6" />
+            <Stop offset="0.5" stopColor="#6E6E7C" />
+            <Stop offset="0.62" stopColor="#9C9CAA" />
+            <Stop offset="1" stopColor="#DCDCE4" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect width={FRAME.width} height={FRAME.height} fill="url(#chromeBands)" />
+      </Svg>
+    </View>
+  );
+}
+
+/** The travelling reflection. Its parent animates translateX + rotation. */
+function ChromeSheen() {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <SvgLinearGradient id="chromeSheen" x1="0" y1="0.5" x2="1" y2="0.5">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="0.42" stopColor="#FFFFFF" stopOpacity={0.05} />
+            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.55} />
+            <Stop offset="0.58" stopColor="#FFFFFF" stopOpacity={0.05} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x={-40} y={-20} width={FRAME.width + 80} height={FRAME.height + 40}
+          fill="url(#chromeSheen)" />
+      </Svg>
+    </View>
+  );
+}
+
+/** Figma-style selection chrome: dashed bounds, corner handles, a dim tag. */
+function BlueprintChrome() {
+  const c = '#7FB8FF';
+  const inset = 1.5;
+  const w = FRAME.width - inset * 2;
+  const h = FRAME.height - inset * 2;
+  const handles: [number, number][] = [
+    [inset, inset], [FRAME.width - inset, inset],
+    [inset, FRAME.height - inset], [FRAME.width - inset, FRAME.height - inset],
+  ];
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+          stroke={c} strokeOpacity={0.8} strokeWidth={1} strokeDasharray="6 4" />
+        {handles.map(([hx, hy]) => (
+          <Rect key={`${hx}-${hy}`} x={hx - 3} y={hy - 3} width={6} height={6}
+            fill={theme.color.bg} stroke={c} strokeWidth={1} />
+        ))}
+      </Svg>
+      <Text style={styles.blueprintTag}>272 × 68</Text>
+    </View>
+  );
+}
+
 /**
  * The liquid-UI halftone: a quiet dot grid over the pill, as on the
  * reference's meshed body. Faint on purpose — texture, not pattern.
@@ -1006,6 +1252,15 @@ const styles = StyleSheet.create({
   },
   glyphPart: {
     position: 'absolute',
+  },
+  blueprintTag: {
+    position: 'absolute',
+    top: 6,
+    left: 14,
+    color: '#7FB8FF',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    fontVariant: ['tabular-nums'],
   },
   label: {
     // Google Sans Flex Regular, per the design; bundled in src/assets/fonts.
