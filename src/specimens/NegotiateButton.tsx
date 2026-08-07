@@ -154,7 +154,7 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       backgroundColor: '#161114',
       borderColor: 'rgba(255, 255, 255, 0.06)',
       boxShadow:
-        'inset 18px 0px 44px 0px rgba(255, 61, 0, 0.55), 0px 4px 32px 0px rgba(255, 45, 0, 0.28)',
+        'inset 12px 0px 30px 0px rgba(255, 61, 0, 0.5), 0px 4px 32px 0px rgba(255, 45, 0, 0.28)',
     },
     glow: {
       edge: 'left',
@@ -291,7 +291,7 @@ function GlowWash({
   const cyBottom = GLOW_ELLIPSE.y + GLOW_ELLIPSE.height / 2;
   const geom =
     edge === 'left'
-      ? { cx: 22, cy: FRAME.height / 2, rx: 95 * squash, ry: FRAME.height * 0.85 }
+      ? { cx: 22, cy: FRAME.height / 2, rx: 62 * squash, ry: FRAME.height * 0.85 }
       : {
           cx: GLOW_ELLIPSE.x + GLOW_ELLIPSE.width / 2,
           cy: edge === 'bottom' ? cyBottom : FRAME.height - cyBottom,
