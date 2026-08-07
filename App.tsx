@@ -17,8 +17,11 @@ export default function App() {
           <Text style={styles.subtitle}>Button experiments</Text>
 
           <View style={styles.bench}>
-            <Text style={styles.specimenName}>Negotiate flight</Text>
+            <Text style={styles.specimenName}>Default — press me</Text>
             <NegotiateButton onPress={() => {}} />
+
+            <Text style={styles.specimenName}>Pressed (pinned)</Text>
+            <NegotiateButton forcePressed />
 
             <Text style={styles.specimenName}>Disabled</Text>
             <NegotiateButton disabled />
