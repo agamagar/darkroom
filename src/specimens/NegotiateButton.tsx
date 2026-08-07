@@ -288,6 +288,8 @@ export type NegotiateButtonProps = {
    * press is far too brief to allow.
    */
   forcePressed?: boolean;
+  /** Which self-drawing arrow the icon-bearing variants use. */
+  arrow?: ArrowKind;
   /**
    * Live offset (pt) applied to the glow layers — the bench's gyroscope
    * drives these so the light leans with the device. The pill itself never
@@ -304,6 +306,7 @@ export function NegotiateButton({
   disabled = false,
   haptics = true,
   forcePressed = false,
+  arrow = 'trend',
   glowShift,
   style,
 }: NegotiateButtonProps) {
@@ -381,7 +384,7 @@ export function NegotiateButton({
           </Animated.View>
         )}
         {spec.mesh && <DotMesh />}
-        {spec.drawIcon && <NegotiateGlyph />}
+        {spec.drawIcon && <NegotiateGlyph kind={arrow} />}
         <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
         {spec.gradientBorder && <GradientBorderRing />}
       </Pressable>
@@ -593,9 +596,37 @@ function ConcaveDish() {
   );
 }
 
-/** Zigzag path from the exported vector; measured length for dash math. */
-const GLYPH_ZIGZAG = 'M20.65 10.65L12.15 2.15L7.15 7.15L0.65 0.65';
-const GLYPH_ZIGZAG_LENGTH = 28.3;
+/**
+ * The self-drawing arrow glyphs, as data. Both share one 2s timeline (the
+ * motion data on the two source nodes is byte-identical); only the geometry
+ * differs, so a new arrow is a row here and nothing else.
+ *
+ *   trail  — the line that draws itself, with its measured path length and
+ *            its offset inside the 24pt box
+ *   head   — the corner bracket that pops in, and where it sits
+ */
+export type ArrowKind = 'trend';
+
+type ArrowSpec = {
+  trail: { d: string; length: number; w: number; h: number; x: number; y: number };
+  head: { d: string; w: number; h: number; x: number; y: number };
+};
+
+const ARROWS: Record<ArrowKind, ArrowSpec> = {
+  /** Node 48:12306 — a downtrend settling into a corner at the bottom right. */
+  trend: {
+    trail: {
+      d: 'M20.65 10.65L12.15 2.15L7.15 7.15L0.65 0.65',
+      length: 28.3,
+      w: 21.3,
+      h: 11.3,
+      x: 2,
+      y: 7,
+    },
+    head: { d: 'M0.65 6.65H6.65V0.65', w: 7.3, h: 7.3, x: 16, y: 11 },
+  },
+};
+
 const GLYPH_LOOP_MS = 2000;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -606,7 +637,8 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
  * over 17.5-27.5% — opacity ease-out, scale 0.4->1 on an overshoot bezier
  * (0.45, 1.45, 0.8, 1). Reduce Motion shows the finished glyph, still.
  */
-function NegotiateGlyph() {
+function NegotiateGlyph({ kind = 'trend' }: { kind?: ArrowKind }) {
+  const arrow = ARROWS[kind];
   const reducedMotion = useReducedMotion();
   const t = useSharedValue(0);
 
@@ -627,7 +659,7 @@ function NegotiateGlyph() {
       Math.min(1, Math.max(0, t.value / 0.25)),
     );
     return {
-      strokeDashoffset: GLYPH_ZIGZAG_LENGTH * (1 - p),
+      strokeDashoffset: arrow.trail.length * (1 - p),
       opacity: t.value > 0.001 ? 1 : 0,
     };
   });
@@ -644,28 +676,34 @@ function NegotiateGlyph() {
 
   return (
     <View style={styles.glyphBox}>
-      {/* Downtrend line — 21.3x11.3 at (2, 7) in the 24px box. */}
       <Svg
-        width={21.3}
-        height={11.3}
-        viewBox="0 0 21.3 11.3"
-        style={styles.glyphZigzag}>
+        width={arrow.trail.w}
+        height={arrow.trail.h}
+        viewBox={`0 0 ${arrow.trail.w} ${arrow.trail.h}`}
+        style={[styles.glyphPart, { left: arrow.trail.x, top: arrow.trail.y }]}>
         <AnimatedPath
-          d={GLYPH_ZIGZAG}
+          d={arrow.trail.d}
           stroke="#FFFFFF"
           strokeWidth={1.3}
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
-          strokeDasharray={`${GLYPH_ZIGZAG_LENGTH} ${GLYPH_ZIGZAG_LENGTH}`}
+          strokeDasharray={`${arrow.trail.length} ${arrow.trail.length}`}
           animatedProps={zigzagProps}
         />
       </Svg>
-      {/* Arrowhead — 7.3x7.3 corner bracket at (16, 11). */}
-      <Animated.View style={[styles.glyphHead, headStyle]}>
-        <Svg width={7.3} height={7.3} viewBox="0 0 7.3 7.3">
+      <Animated.View
+        style={[
+          styles.glyphPart,
+          { left: arrow.head.x, top: arrow.head.y },
+          headStyle,
+        ]}>
+        <Svg
+          width={arrow.head.w}
+          height={arrow.head.h}
+          viewBox={`0 0 ${arrow.head.w} ${arrow.head.h}`}>
           <Path
-            d="M0.65 6.65H6.65V0.65"
+            d={arrow.head.d}
             stroke="#FFFFFF"
             strokeWidth={1.3}
             strokeLinecap="round"
@@ -823,15 +861,8 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
-  glyphZigzag: {
+  glyphPart: {
     position: 'absolute',
-    left: 2,
-    top: 7,
-  },
-  glyphHead: {
-    position: 'absolute',
-    left: 16,
-    top: 11,
   },
   label: {
     // Google Sans Flex Regular, per the design; bundled in src/assets/fonts.
