@@ -1,22 +1,33 @@
 import MaskedView from '@react-native-masked-view/masked-view';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
 import {
   Pressable,
   StyleSheet,
   Text,
   View,
   type StyleProp,
-  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import Animated, {
+  Easing,
+  useAnimatedProps,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Ellipse,
+  Path,
+  RadialGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
 import { theme } from '../theme';
 
@@ -55,7 +66,8 @@ export type NegotiateButtonVariant =
   | 'beacon'
   | 'eclipse'
   | 'ember'
-  | 'molten';
+  | 'molten'
+  | 'drawn';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -80,6 +92,10 @@ type VariantSpec = {
   };
   /** A halftone dot mesh over the fill, as on liquid-UI surfaces. */
   mesh?: boolean;
+  /** The deep-violet radial base of node 48:12304, under everything else. */
+  violetBase?: boolean;
+  /** The self-drawing negotiate glyph beside the label (2s loop). */
+  drawIcon?: boolean;
   /** Label treatment. Gradient is the design's masked fill. */
   label: { kind: 'gradient' } | { kind: 'solid'; color: string };
 };
@@ -167,6 +183,26 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     label: { kind: 'solid', color: '#F5F0EC' },
   },
 
+  /**
+   * Port of node 48:12304 ("Negotiate", Portfolio file): deep-violet radial
+   * base fading to black at the rim, glow off the bottom edge, an inset
+   * throw from the bottom-RIGHT (#3E01C8), a 1.5pt white/45 border, and the
+   * negotiate glyph that draws itself on a 2s loop.
+   */
+  drawn: {
+    pill: {
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: 'rgba(255, 255, 255, 0.45)',
+      boxShadow: 'inset -8px -16px 40px 0px #3E01C8',
+      gap: 12,
+    },
+    violetBase: true,
+    drawIcon: true,
+    glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.9 },
+    label: { kind: 'gradient' },
+  },
+
   /** Light under a door: the glow compressed into a hot band at the rim. */
   ember: {
     pill: {
@@ -248,6 +284,7 @@ export function NegotiateButton({
           press.value = withTiming(0, { duration: PRESS_OUT_MS });
         }}
         style={[styles.pill, spec.pill, disabled && styles.pillDisabled]}>
+        {spec.violetBase && <VioletBase />}
         {spec.glow && spec.glow.rest > 0 && (
           <GlowWash config={spec.glow} lit={false} />
         )}
@@ -265,6 +302,7 @@ export function NegotiateButton({
             <GlowWash config={spec.glow} lit />
           </Animated.View>
         )}
+        {spec.drawIcon && <NegotiateGlyph />}
         <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
       </Pressable>
     </Animated.View>
@@ -329,6 +367,123 @@ function GlowWash({
         </Defs>
         <Ellipse cx={geom.cx} cy={geom.cy} rx={geom.rx} ry={geom.ry} fill={`url(#${id})`} />
       </Svg>
+    </View>
+  );
+}
+
+/**
+ * Node 48:12304's base fill: a radial from #200363 at (0.5, 0.594) out
+ * through ever-darker violets to black. Figma bakes it as an inline SVG;
+ * the stops and centre are lifted from that markup, radii scaled from the
+ * node's 212x72 to the pill's 272x68.
+ */
+function VioletBase() {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <RadialGradient
+            id="violetBase"
+            gradientUnits="userSpaceOnUse"
+            cx={FRAME.width / 2}
+            cy={40.4}
+            rx={110}
+            ry={27.6}>
+            <Stop offset="0" stopColor="#200363" />
+            <Stop offset="0.25" stopColor="#18024A" />
+            <Stop offset="0.5" stopColor="#100131" />
+            <Stop offset="0.75" stopColor="#080119" />
+            <Stop offset="0.875" stopColor="#04000C" />
+            <Stop offset="1" stopColor="#000000" />
+          </RadialGradient>
+        </Defs>
+        <Rect width={FRAME.width} height={FRAME.height} fill="url(#violetBase)" />
+      </Svg>
+    </View>
+  );
+}
+
+/** Zigzag path from the exported vector; measured length for dash math. */
+const GLYPH_ZIGZAG = 'M20.65 10.65L12.15 2.15L7.15 7.15L0.65 0.65';
+const GLYPH_ZIGZAG_LENGTH = 28.3;
+const GLYPH_LOOP_MS = 2000;
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+/**
+ * The negotiate glyph, per the file's motion data (2s loop): the downtrend
+ * line draws itself over 0-25% (ease-in-out), then the arrowhead pops in
+ * over 17.5-27.5% — opacity ease-out, scale 0.4->1 on an overshoot bezier
+ * (0.45, 1.45, 0.8, 1). Reduce Motion shows the finished glyph, still.
+ */
+function NegotiateGlyph() {
+  const reducedMotion = useReducedMotion();
+  const t = useSharedValue(0);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      t.value = 1;
+      return;
+    }
+    t.value = 0;
+    t.value = withRepeat(
+      withTiming(1, { duration: GLYPH_LOOP_MS, easing: Easing.linear }),
+      -1,
+    );
+  }, [reducedMotion, t]);
+
+  const zigzagProps = useAnimatedProps(() => {
+    const p = Easing.inOut(Easing.ease)(
+      Math.min(1, Math.max(0, t.value / 0.25)),
+    );
+    return {
+      strokeDashoffset: GLYPH_ZIGZAG_LENGTH * (1 - p),
+      opacity: t.value > 0.001 ? 1 : 0,
+    };
+  });
+
+  const headStyle = useAnimatedStyle(() => {
+    const p = Math.min(1, Math.max(0, (t.value - 0.175) / 0.1));
+    return {
+      opacity: Easing.out(Easing.ease)(p),
+      transform: [
+        { scale: 0.4 + 0.6 * Easing.bezierFn(0.45, 1.45, 0.8, 1)(p) },
+      ],
+    };
+  });
+
+  return (
+    <View style={styles.glyphBox}>
+      {/* Downtrend line — 21.3x11.3 at (2, 7) in the 24px box. */}
+      <Svg
+        width={21.3}
+        height={11.3}
+        viewBox="0 0 21.3 11.3"
+        style={styles.glyphZigzag}>
+        <AnimatedPath
+          d={GLYPH_ZIGZAG}
+          stroke="#FFFFFF"
+          strokeWidth={1.3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          strokeDasharray={`${GLYPH_ZIGZAG_LENGTH} ${GLYPH_ZIGZAG_LENGTH}`}
+          animatedProps={zigzagProps}
+        />
+      </Svg>
+      {/* Arrowhead — 7.3x7.3 corner bracket at (16, 11). */}
+      <Animated.View style={[styles.glyphHead, headStyle]}>
+        <Svg width={7.3} height={7.3} viewBox="0 0 7.3 7.3">
+          <Path
+            d="M0.65 6.65H6.65V0.65"
+            stroke="#FFFFFF"
+            strokeWidth={1.3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </Svg>
+      </Animated.View>
     </View>
   );
 }
@@ -459,6 +614,20 @@ const styles = StyleSheet.create({
   },
   gradientSizer: {
     opacity: 0,
+  },
+  glyphBox: {
+    width: 24,
+    height: 24,
+  },
+  glyphZigzag: {
+    position: 'absolute',
+    left: 2,
+    top: 7,
+  },
+  glyphHead: {
+    position: 'absolute',
+    left: 16,
+    top: 11,
   },
   label: {
     // Google Sans Flex Regular, per the design; bundled in src/assets/fonts.
