@@ -165,10 +165,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.color.primary950,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 124, 246, 0.35)',
-    // A hint of the house glow so it reads as part of the family.
-    boxShadow: `0px 4px 24px 0px rgba(109, 92, 240, 0.35)`,
   },
   sheet: {
     position: 'absolute',
