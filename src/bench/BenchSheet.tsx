@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Easing,
   interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Line } from 'react-native-svg';
@@ -49,7 +49,11 @@ export function BenchSheet({
   // races reanimated's commit.)
   useEffect(() => {
     if (visible) {
-      open.value = withSpring(1, { damping: 18, stiffness: 180 });
+      // Timing, not spring — the sheet should arrive and stop, no bounce.
+      open.value = withTiming(1, {
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+      });
     }
   }, [visible, open]);
 
@@ -70,7 +74,10 @@ export function BenchSheet({
       if (shouldDismiss) {
         runOnJS(close)();
       } else {
-        drag.value = withSpring(0, { damping: 20, stiffness: 220 });
+        drag.value = withTiming(0, {
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+        });
       }
     });
 
