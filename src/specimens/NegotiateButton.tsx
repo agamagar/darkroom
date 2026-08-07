@@ -56,6 +56,14 @@ const FRAME = { width: 272, height: 68 } as const;
 const GLOW_ELLIPSE = { x: 20.58, y: 41.15, width: 239.76, height: 76.61 } as const;
 
 /** Enough travel to feel the press without the 272pt pill looking rubbery. */
+/**
+ * How far past its own bounds the wash throws light, standing in for the
+ * gaussian blur Figma applies to the source ellipse. Sized so the pill's
+ * caps and bottom corners — which sat at normalised r 1.11 to 1.37, i.e.
+ * outside the gradient entirely — all fall inside it.
+ */
+const BLUR_BLEED = 1.45;
+
 const PRESSED_SCALE = 0.97;
 /** Press-down should read instantly; the release can breathe. */
 const PRESS_IN_MS = 90;
@@ -435,16 +443,38 @@ function GlowWash({
       ? {
           cx: edge === 'left' ? 22 : FRAME.width / 2,
           cy: FRAME.height / 2,
-          rx: 62 * squash * spread,
-          ry: FRAME.height * 0.85 * spread,
+          rx: 62 * squash * spread * BLUR_BLEED,
+          ry: FRAME.height * 0.85 * spread * BLUR_BLEED,
         }
       : {
           cx: GLOW_ELLIPSE.x + GLOW_ELLIPSE.width / 2,
           cy: edge === 'bottom' ? cyBottom : FRAME.height - cyBottom,
-          rx: GLOW_ELLIPSE.width / 2,
-          ry: (GLOW_ELLIPSE.height / 2) * squash,
+          rx: (GLOW_ELLIPSE.width / 2) * BLUR_BLEED,
+          ry: (GLOW_ELLIPSE.height / 2) * squash * BLUR_BLEED,
         };
   const id = `wash-${edge}-${color.replace('#', '')}-${lit ? 'lit' : 'rest'}-${squash}-${spread}`;
+
+  // Figma blurs this ellipse, and a blur throws light past the shape's own
+  // bounds. A plain radial does not: it hits zero exactly at r=1, and since
+  // the ellipse is 240pt wide inside a 272pt pill, both caps and all four
+  // bottom corners sat past r=1 with nothing painted on them at all — a hard
+  // unlit edge, not a falloff.
+  //
+  // So the ellipse grows by BLUR_BLEED and every stop is pulled in by the
+  // same factor, which leaves the profile at any given physical distance
+  // exactly as it was. Only the tail is new: where the gradient used to
+  // terminate it now carries a little light and fades out past the pill
+  // edge, so the caps resolve instead of stopping.
+  // A wide wash needs a long tail; a tight one wants the original two-step
+  // falloff. Extra stops keep the ramp smooth all the way to zero.
+  const softTail = spread > 1;
+  const B = BLUR_BLEED;
+  const stops: [number, number][] = core
+    ? softTail
+      ? [[0, 1], [0.18 / B, 0.85], [0.34 / B, 0.6], [0.5 / B, 0.36],
+         [0.68 / B, 0.18], [0.85 / B, 0.06], [1, 0]]
+      : [[0, 1], [0.3 / B, 1], [0.65 / B, 0.45], [1 / B, 0.14], [1, 0]]
+    : [[0, 1], [0.6 / B, 0.4], [1 / B, 0.14], [1, 0]];
 
   // Tilt moves where the light is BRIGHTEST, not where it reaches. The
   // ellipse only covers ~88% of the pill, so translating the layer drags its
@@ -459,9 +489,6 @@ function GlowWash({
       fy: `${(0.5 + dy) * 100}%`,
     };
   });
-  // A wide wash needs a long tail; a tight one wants the original two-step
-  // falloff. Extra stops keep the ramp smooth all the way to zero.
-  const softTail = spread > 1;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
@@ -476,28 +503,15 @@ function GlowWash({
             rx="50%"
             ry="50%"
             animatedProps={focal}>
-            {(core
-              ? softTail
-                ? [
-                    <Stop key="s0" offset="0" stopColor={core} stopOpacity={opacity} />,
-                    <Stop key="s1" offset="0.18" stopColor={core} stopOpacity={opacity * 0.85} />,
-                    <Stop key="s2" offset="0.34" stopColor={color} stopOpacity={opacity * 0.6} />,
-                    <Stop key="s3" offset="0.5" stopColor={color} stopOpacity={opacity * 0.36} />,
-                    <Stop key="s4" offset="0.68" stopColor={color} stopOpacity={opacity * 0.18} />,
-                    <Stop key="s5" offset="0.85" stopColor={color} stopOpacity={opacity * 0.06} />,
-                  ]
-                : [
-                    <Stop key="s0" offset="0" stopColor={core} stopOpacity={opacity} />,
-                    <Stop key="s1" offset="0.3" stopColor={color} stopOpacity={opacity} />,
-                    <Stop key="s2" offset="0.65" stopColor={color} stopOpacity={opacity * 0.45} />,
-                  ]
-              : [
-                  <Stop key="s0" offset="0" stopColor={color} stopOpacity={opacity} />,
-                  <Stop key="s1" offset="0.6" stopColor={color} stopOpacity={opacity * 0.4} />,
-                ]
-            ).concat(
-              <Stop key="sEnd" offset="1" stopColor={color} stopOpacity={0} />,
-            )}
+            {stops.map(([offset, weight], i) => (
+              <Stop
+                key={offset}
+                offset={offset}
+                // The hot core colour only holds for the first stop or two.
+                stopColor={core && i === 0 ? core : color}
+                stopOpacity={opacity * weight}
+              />
+            ))}
           </AnimatedRadialGradient>
         </Defs>
         <Ellipse cx={geom.cx} cy={geom.cy} rx={geom.rx} ry={geom.ry} fill={`url(#${id})`} />
