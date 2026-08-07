@@ -120,6 +120,8 @@ type VariantSpec = {
   };
   /** A halftone dot mesh over the fill, as on liquid-UI surfaces. */
   mesh?: boolean;
+  /** ember's compressed bottom band, faded in by the press (molten's pressed state). */
+  emberPress?: boolean;
   /** The deep-violet radial base of node 48:12304, under everything else. */
   violetBase?: boolean;
   /** The self-drawing negotiate glyph beside the label (2s loop). */
@@ -239,9 +241,12 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   molten: {
     pill: {
       backgroundColor: theme.color.primary950,
-      borderColor: theme.color.hairline,
+      // Sharper vessel: a crisp 1pt lilac rim instead of the soft hairline.
+      borderWidth: 1,
+      borderColor: 'rgba(214, 204, 255, 0.32)',
       boxShadow: `inset 0px 0px 30px 0px rgba(109, 92, 240, 0.5), 0px 4px 32px 0px rgba(109, 92, 240, 0.28)`,
     },
+    emberPress: true,
     glow: {
       edge: 'center',
       color: theme.color.glow,
@@ -525,6 +530,24 @@ export function NegotiateButton({
   const developTintStyle = useAnimatedStyle(() => ({
     opacity: (1 - develop.value) * 0.85,
   }));
+  /**
+   * Molten's depth stack: three layers ride the tilt at different rates —
+   * pool focal at 1x (inside GlowWash), mesh at 0.35x, the white-hot spark
+   * at 1.6x — and the parallax between them is what makes the liquid read
+   * as having depth under the surface.
+   */
+  const meshParallax = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (glowShift?.x.value ?? 0) * 0.35 },
+      { translateY: (glowShift?.y.value ?? 0) * 0.35 },
+    ],
+  }));
+  const sparkParallax = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (glowShift?.x.value ?? 0) * 1.6 },
+      { translateY: (glowShift?.y.value ?? 0) * 1.6 },
+    ],
+  }));
   /** Chrome sheen: tilt slides the reflection, the press flicks it across. */
   const sheenStyle = useAnimatedStyle(() => ({
     transform: [
@@ -629,7 +652,22 @@ export function NegotiateButton({
             <ConcaveDish />
           </Animated.View>
         )}
-        {spec.mesh && <DotMesh />}
+        {spec.emberPress && (
+          <Animated.View pointerEvents="none" style={[styles.litLayer, litStyle]}>
+            <GlowWash config={EMBER_PRESS_BAND} lit shift={glowShift} />
+          </Animated.View>
+        )}
+        {spec.mesh && (
+          <>
+            <Animated.View pointerEvents="none" style={[styles.litLayer, sparkParallax]}>
+              <MoltenSpark />
+            </Animated.View>
+            <Animated.View pointerEvents="none" style={[styles.litLayer, meshParallax]}>
+              <DotMesh />
+            </Animated.View>
+            <MoltenRim />
+          </>
+        )}
         {showIcon && <NegotiateGlyph kind={iconKind} />}
         <Animated.View style={developStyle}>
           <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
@@ -1391,6 +1429,58 @@ function BlueprintChrome() {
           <Rect key={`${hx}-${hy}`} x={hx - 3} y={hy - 3} width={6} height={6}
             fill={theme.color.bg} stroke={c} strokeWidth={1} />
         ))}
+      </Svg>
+    </View>
+  );
+}
+
+/** ember's band, borrowed as molten's pressed state — heat sinking to the rim. */
+const EMBER_PRESS_BAND: NonNullable<VariantSpec['glow']> = {
+  edge: 'bottom',
+  color: theme.color.indigo400,
+  rest: 0,
+  lit: 1,
+  squash: 0.45,
+};
+
+/**
+ * The white-hot centre of the pool: a small intense spark riding the tilt
+ * at 1.6x, so it swims ahead of the wash it lives in — molecular heat, not
+ * a second lamp.
+ */
+function MoltenSpark() {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <RadialGradient id="moltenSpark" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0" stopColor="#F2ECFF" stopOpacity={0.55} />
+            <Stop offset="0.45" stopColor={theme.color.indigo400} stopOpacity={0.2} />
+            <Stop offset="1" stopColor={theme.color.indigo400} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx={FRAME.width / 2} cy={FRAME.height / 2} rx={46} ry={22}
+          fill="url(#moltenSpark)" />
+      </Svg>
+    </View>
+  );
+}
+
+/** A crisp top rim catch-light on the vessel's lip. */
+function MoltenRim() {
+  const inset = 1.2;
+  const h = FRAME.height - inset * 2;
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <SvgLinearGradient id="moltenRim" x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.28} />
+            <Stop offset="0.35" stopColor="#FFFFFF" stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x={inset} y={inset} width={FRAME.width - inset * 2} height={h}
+          rx={h / 2} fill="none" stroke="url(#moltenRim)" strokeWidth={1.2} />
       </Svg>
     </View>
   );
