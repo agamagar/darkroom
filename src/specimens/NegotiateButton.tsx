@@ -18,6 +18,7 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -231,6 +232,12 @@ export type NegotiateButtonProps = {
    * press is far too brief to allow.
    */
   forcePressed?: boolean;
+  /**
+   * Live offset (pt) applied to the glow layers — the bench's gyroscope
+   * drives these so the light leans with the device. The pill itself never
+   * moves; only its light does.
+   */
+  glowShift?: { x: SharedValue<number>; y: SharedValue<number> };
   style?: StyleProp<ViewStyle>;
 };
 
@@ -241,6 +248,7 @@ export function NegotiateButton({
   disabled = false,
   haptics = true,
   forcePressed = false,
+  glowShift,
   style,
 }: NegotiateButtonProps) {
   const spec = VARIANTS[variant];
@@ -259,6 +267,13 @@ export function NegotiateButton({
   }));
 
   const litStyle = useAnimatedStyle(() => ({ opacity: press.value }));
+
+  const shiftStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: glowShift?.x.value ?? 0 },
+      { translateY: glowShift?.y.value ?? 0 },
+    ],
+  }));
 
   return (
     <Animated.View style={[styles.pillWrapper, pillStyle, style]}>
@@ -283,23 +298,26 @@ export function NegotiateButton({
         }}
         style={[styles.pill, spec.pill, disabled && styles.pillDisabled]}>
         {spec.violetBase && <VioletBase />}
-        {spec.glow && spec.glow.rest > 0 && (
-          <GlowWash config={spec.glow} lit={false} />
-        )}
-        {spec.mesh && <DotMesh />}
         {/*
-          The lit layer is the glow again at full strength, faded in on press.
-          Stacking rather than swapping means the two states share their
-          geometry exactly, so nothing shifts as it brightens.
+          Both wash layers share one shifted parent so the gyroscope moves
+          them as a single light source. The lit layer is the glow again at
+          full strength, faded in on press — stacking rather than swapping
+          means the two states share their geometry exactly.
         */}
         {spec.glow && (
           <Animated.View
             pointerEvents="none"
-            style={[styles.litLayer, litStyle]}
-            needsOffscreenAlphaCompositing>
-            <GlowWash config={spec.glow} lit />
+            style={[styles.litLayer, shiftStyle]}>
+            {spec.glow.rest > 0 && <GlowWash config={spec.glow} lit={false} />}
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.litLayer, litStyle]}
+              needsOffscreenAlphaCompositing>
+              <GlowWash config={spec.glow} lit />
+            </Animated.View>
           </Animated.View>
         )}
+        {spec.mesh && <DotMesh />}
         {spec.drawIcon && <NegotiateGlyph />}
         <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
       </Pressable>
@@ -344,28 +362,23 @@ function GlowWash({
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
+          {/* Stops are keyed arrays, never fragments: react-native-svg
+              clones gradient children with a `parent` prop, and a Fragment
+              rejects it ("Invalid prop `parent` supplied to React.Fragment"). */}
           <RadialGradient id={id} cx="50%" cy="50%" rx="50%" ry="50%">
-            {core ? (
-              <>
-                <Stop offset="0" stopColor={core} stopOpacity={opacity} />
-                <Stop offset="0.3" stopColor={color} stopOpacity={opacity} />
-                <Stop
-                  offset="0.65"
-                  stopColor={color}
-                  stopOpacity={opacity * 0.45}
-                />
-              </>
-            ) : (
-              <>
-                <Stop offset="0" stopColor={color} stopOpacity={opacity} />
-                <Stop
-                  offset="0.6"
-                  stopColor={color}
-                  stopOpacity={opacity * 0.4}
-                />
-              </>
+            {(core
+              ? [
+                  <Stop key="s0" offset="0" stopColor={core} stopOpacity={opacity} />,
+                  <Stop key="s1" offset="0.3" stopColor={color} stopOpacity={opacity} />,
+                  <Stop key="s2" offset="0.65" stopColor={color} stopOpacity={opacity * 0.45} />,
+                ]
+              : [
+                  <Stop key="s0" offset="0" stopColor={color} stopOpacity={opacity} />,
+                  <Stop key="s1" offset="0.6" stopColor={color} stopOpacity={opacity * 0.4} />,
+                ]
+            ).concat(
+              <Stop key="sEnd" offset="1" stopColor={color} stopOpacity={0} />,
             )}
-            <Stop offset="1" stopColor={color} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Ellipse cx={geom.cx} cy={geom.cy} rx={geom.rx} ry={geom.ry} fill={`url(#${id})`} />

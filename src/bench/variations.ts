@@ -28,16 +28,29 @@ export type Type = (typeof TYPES)[number];
 export const SCREENS = ['void', 'negotiate', 'globe', 'card', 'light'] as const;
 export type Screen = (typeof SCREENS)[number];
 
+/** Gyroscope-driven glow movement: how far the light leans with the device. */
+export const GYROS = ['off', 'medium', 'extreme'] as const;
+export type Gyro = (typeof GYROS)[number];
+
+/** Max glow offset in pt at full tilt, per level. */
+export const GYRO_AMPLITUDE: Record<Gyro, number> = {
+  off: 0,
+  medium: 10,
+  extreme: 26,
+};
+
 export type Selection = {
   state: State;
   type: Type;
   screen: Screen;
+  gyro: Gyro;
 };
 
 export const INITIAL_SELECTION: Selection = {
   state: 'default',
   type: 'gradient',
   screen: 'void',
+  gyro: 'off',
 };
 
 /**
