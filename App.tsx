@@ -8,9 +8,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { BenchSheet, SHEET_HEIGHT } from './src/bench/BenchSheet';
+import { ScreenBackdrop } from './src/bench/screens';
 import { VariantPicker } from './src/bench/VariantPicker';
 import {
   INITIAL_SELECTION,
+  SCREENS,
   STATES,
   TYPES,
   propsFor,
@@ -34,10 +36,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
+      {/* The base UI behind everything — the backdrop moves with the stage
+          so specimen and surface read as one screen. */}
       <SafeAreaView style={styles.root}>
-        {/* The specimen sits alone in the middle with nothing to compare
-            itself against — the sheet swaps what is under the light. */}
         <Animated.View style={[styles.stage, stageStyle]}>
+          <ScreenBackdrop screen={selection.screen} />
           <NegotiateButton
             // Remounts on selection change so a specimen that pins its press
             // value at mount picks the new one up.
@@ -64,6 +67,12 @@ export default function App() {
           options={TYPES}
           value={selection.type}
           onChange={(type) => setSelection((s) => ({ ...s, type }))}
+        />
+        <VariantPicker
+          label="Screen"
+          options={SCREENS}
+          value={selection.screen}
+          onChange={(screen) => setSelection((s) => ({ ...s, screen }))}
         />
       </BenchSheet>
     </GestureHandlerRootView>
