@@ -24,6 +24,7 @@ import Svg, {
   Circle,
   Defs,
   Ellipse,
+  LinearGradient as SvgLinearGradient,
   Path,
   RadialGradient,
   Rect,
@@ -97,6 +98,13 @@ type VariantSpec = {
   violetBase?: boolean;
   /** The self-drawing negotiate glyph beside the label (2s loop). */
   drawIcon?: boolean;
+  /**
+   * Node 48:12304's stroke is a gradient, not a flat colour — near-invisible
+   * at the top, violet at the caps and bottom (sampled from the render:
+   * top-mid rgb(8,2,19) vs cap-mid rgb(94,57,178)). RN cannot gradient a
+   * borderColor, so this draws the ring as an SVG stroke.
+   */
+  gradientBorder?: boolean;
   /** Label treatment. Gradient is the design's masked fill. */
   label: { kind: 'gradient' } | { kind: 'solid'; color: string };
 };
@@ -185,19 +193,19 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   /**
    * Port of node 48:12304 ("Negotiate", Portfolio file): deep-violet radial
    * base fading to black at the rim, glow off the bottom edge, an inset
-   * throw from the bottom-RIGHT (#3E01C8), a 1.5pt white/45 border, and the
-   * negotiate glyph that draws itself on a 2s loop.
+   * throw from the bottom-RIGHT (#3E01C8), a 1.5pt gradient stroke (see
+   * gradientBorder), and the negotiate glyph that draws itself on a 2s loop.
    */
   drawn: {
     pill: {
       backgroundColor: 'transparent',
-      borderWidth: 1.5,
-      borderColor: 'rgba(255, 255, 255, 0.45)',
+      borderWidth: 0,
       boxShadow: 'inset -8px -16px 40px 0px #3E01C8',
       gap: 12,
     },
     violetBase: true,
     drawIcon: true,
+    gradientBorder: true,
     glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.9 },
     label: { kind: 'gradient' },
   },
@@ -320,6 +328,7 @@ export function NegotiateButton({
         {spec.mesh && <DotMesh />}
         {spec.drawIcon && <NegotiateGlyph />}
         <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
+        {spec.gradientBorder && <GradientBorderRing />}
       </Pressable>
     </Animated.View>
   );
@@ -414,6 +423,38 @@ function VioletBase() {
           </RadialGradient>
         </Defs>
         <Rect width={FRAME.width} height={FRAME.height} fill="url(#violetBase)" />
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * The gradient stroke of node 48:12304, drawn as an SVG ring. Stops fitted
+ * to the sampled render: gone at the top, waking through violet mid-height,
+ * full at the bottom rim.
+ */
+function GradientBorderRing() {
+  const inset = 0.75; // centre a 1.5pt stroke on the frame edge
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <SvgLinearGradient id="borderRing" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.05} />
+            <Stop offset="0.5" stopColor="#8B7CF6" stopOpacity={0.4} />
+            <Stop offset="1" stopColor="#975AFF" stopOpacity={0.95} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect
+          x={inset}
+          y={inset}
+          width={FRAME.width - inset * 2}
+          height={FRAME.height - inset * 2}
+          rx={(FRAME.height - inset * 2) / 2}
+          stroke="url(#borderRing)"
+          strokeWidth={1.5}
+          fill="none"
+        />
       </Svg>
     </View>
   );
