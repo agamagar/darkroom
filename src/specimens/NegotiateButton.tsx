@@ -986,23 +986,56 @@ function NegotiateGlyph({ kind = 'trend' }: { kind?: ArrowKind }) {
   );
 }
 
+const PHI = 1.618;
+
+/**
+ * Pressed, the tube resonates: five concentric rings echoing inward, each
+ * gap phi times the previous (insets 2, 5.2, 10.4, 18.8, 32.3 — the base
+ * gap of 3.2 is chosen so the fifth ring lands just inside the pill's
+ * 33pt vertical half-height). Inward, not outward, because the pill clips
+ * at its own edge and outward echoes would never be seen. Brightness and
+ * weight fall with each step, so it reads as the tube ringing, not five
+ * tubes.
+ */
+const NEON_ECHOES = Array.from({ length: 5 }, (_, i) => ({
+  inset: i === 0 ? 2 : 2 + 3.2 * ((PHI ** i - 1) / (PHI - 1)),
+  opacity: [1, 0.55, 0.34, 0.2, 0.12][i],
+  width: [1.6, 1.4, 1.2, 1.1, 1][i],
+}));
+
 /** The neon tube: a bright ring hugging the rim, haloed inward and out. */
 function NeonRing({ lit }: { lit: boolean }) {
   const inset = 2;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
-  const id = lit ? 'neonLit' : 'neonRest';
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {/* Halo first, tube on top: three strokes at widening blur stand in
-            for a gaussian glow, which SVG strokes cannot have. */}
+        {/* Halo first, tube on top: stacked strokes at widening widths stand
+            in for a gaussian glow, which SVG strokes cannot have. */}
         <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
           stroke={theme.color.glow} strokeOpacity={lit ? 0.5 : 0.22} strokeWidth={9} />
         <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
           stroke={theme.color.indigo400} strokeOpacity={lit ? 0.85 : 0.5} strokeWidth={4.5} />
-        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
-          stroke={lit ? '#FFFFFF' : '#D8CFFF'} strokeOpacity={lit ? 1 : 0.9} strokeWidth={1.6} id={id} />
+        {lit ? (
+          NEON_ECHOES.map(({ inset: ei, opacity, width }, i) => (
+            <Rect
+              key={ei}
+              x={ei}
+              y={ei}
+              width={FRAME.width - ei * 2}
+              height={FRAME.height - ei * 2}
+              rx={(FRAME.height - ei * 2) / 2}
+              fill="none"
+              stroke={i === 0 ? '#FFFFFF' : '#D8CFFF'}
+              strokeOpacity={opacity}
+              strokeWidth={width}
+            />
+          ))
+        ) : (
+          <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+            stroke="#D8CFFF" strokeOpacity={0.9} strokeWidth={1.6} />
+        )}
       </Svg>
     </View>
   );
