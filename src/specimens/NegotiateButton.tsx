@@ -82,6 +82,7 @@ export type NegotiateButtonVariant =
   | 'molten'
   | 'drawn'
   | 'concave'
+  | 'material'
   | 'safelight'
   | 'neon'
   | 'carve'
@@ -372,6 +373,24 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     },
     blueprintChrome: true,
     glow: { edge: 'bottom', color: theme.color.glow, rest: 0, lit: 0.95 },
+    label: { kind: 'gradient' },
+  },
+
+  /**
+   * A copy of `drawn`, opened for divergence — same violet radial base,
+   * bottom glow, bottom-right inset throw, gradient stroke and self-drawing
+   * glyph. Fork it freely; `drawn` stays the faithful port of 48:12304.
+   */
+  material: {
+    pill: {
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      boxShadow: 'inset -8px -16px 40px 0px #3E01C8',
+    },
+    violetBase: true,
+    drawIcon: true,
+    gradientBorder: true,
+    glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.9 },
     label: { kind: 'gradient' },
   },
 

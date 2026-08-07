@@ -24,6 +24,7 @@ export const TYPES = [
   'molten',
   'drawn',
   'concave',
+  'material',
   'safelight',
   'neon',
   'carve',
