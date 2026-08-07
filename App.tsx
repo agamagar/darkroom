@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { BenchSheet } from './src/bench/BenchSheet';
@@ -23,13 +23,6 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.root}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Dark Room</Text>
-          <Text style={styles.readout}>
-            {selection.type} · {selection.state}
-          </Text>
-        </View>
-
         {/* The specimen sits alone in the middle with nothing to compare
             itself against — the sheet swaps what is under the light. */}
         <View style={styles.stage}>
@@ -68,25 +61,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: theme.color.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.space.lg,
-    paddingTop: theme.space.md,
-  },
-  title: {
-    color: theme.color.textPrimary,
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-  },
-  readout: {
-    color: theme.color.textTertiary,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
   },
   stage: {
     flex: 1,
