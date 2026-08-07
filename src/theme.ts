@@ -19,6 +19,11 @@ export const theme = {
     /** Tail colour of the label's gradient. */
     labelGradientEnd: '#8375E5',
     hairline: 'rgba(82, 82, 94, 0.2)',
+
+    /** Figma variable `indigo/400` — the bench picker's selection colour. */
+    indigo400: '#8B7CF6',
+    /** Figma variable `indigo/500`. Same value as `glow`. */
+    indigo500: '#6D5CF0',
   },
   space: {
     xs: 4,

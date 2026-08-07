@@ -1,32 +1,56 @@
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { VariantPicker } from './src/bench/VariantPicker';
+import {
+  INITIAL_SELECTION,
+  STATES,
+  TYPES,
+  propsFor,
+  type Selection,
+} from './src/bench/variations';
 import { NegotiateButton } from './src/specimens/NegotiateButton';
 import { theme } from './src/theme';
 
 export default function App() {
+  const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.root}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          contentInsetAdjustmentBehavior="automatic">
+        <View style={styles.header}>
           <Text style={styles.title}>Dark Room</Text>
-          <Text style={styles.subtitle}>Button experiments</Text>
+        </View>
 
-          <View style={styles.bench}>
-            <Text style={styles.specimenName}>Default — press me</Text>
-            <NegotiateButton onPress={() => {}} />
+        {/* The specimen sits alone in the middle with nothing to compare
+            itself against — the pickers swap what is under the light. */}
+        <View style={styles.stage}>
+          <NegotiateButton
+            // Remounts on state change so a specimen that pins its press
+            // value at mount picks the new one up.
+            key={selection.state}
+            onPress={() => {}}
+            {...propsFor(selection)}
+          />
+        </View>
 
-            <Text style={styles.specimenName}>Pressed (pinned)</Text>
-            <NegotiateButton forcePressed />
-
-            <Text style={styles.specimenName}>Disabled</Text>
-            <NegotiateButton disabled />
-          </View>
-        </ScrollView>
+        <View style={styles.controls}>
+          <VariantPicker
+            label="State"
+            options={STATES}
+            value={selection.state}
+            onChange={(state) => setSelection((s) => ({ ...s, state }))}
+          />
+          <VariantPicker
+            label="Type"
+            options={TYPES}
+            value={selection.type}
+            onChange={(type) => setSelection((s) => ({ ...s, type }))}
+          />
+        </View>
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -37,30 +61,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.color.bg,
   },
-  content: {
+  header: {
     paddingHorizontal: theme.space.lg,
-    paddingTop: theme.space.xl,
-    paddingBottom: theme.space.xxl,
-    gap: theme.space.sm,
+    paddingTop: theme.space.md,
   },
   title: {
     color: theme.color.textPrimary,
-    fontSize: 32,
-    fontWeight: '700',
-    letterSpacing: -0.6,
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
-  subtitle: {
-    color: theme.color.textSecondary,
-    fontSize: 15,
+  stage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  bench: {
-    marginTop: theme.space.xl,
+  controls: {
+    paddingBottom: theme.space.xl,
     gap: theme.space.lg,
-  },
-  specimenName: {
-    color: theme.color.textTertiary,
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
   },
 });
