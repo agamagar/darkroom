@@ -38,4 +38,15 @@ export const theme = {
     md: 12,
     lg: 999,
   },
+  /**
+   * The design's families, bundled in src/assets/fonts. Google Sans Flex is
+   * instanced static (wght 300/400, wdth 100, GRAD 0, ROND 0) because RN
+   * cannot drive variable-font axes; Stack Sans Headline is OFL, from the
+   * Stack Sans Project repo.
+   */
+  font: {
+    flexLight: 'GoogleSansFlex-Light',
+    flexRegular: 'GoogleSansFlex-Regular',
+    headlineLight: 'StackSansHeadline-Light',
+  },
 } as const;

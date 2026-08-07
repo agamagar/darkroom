@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -30,6 +31,14 @@ export default function App() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { width, height } = useWindowDimensions();
 
+  // Block first paint until the design's families are in — a flash of the
+  // system font on a fidelity bench defeats the bench.
+  const [fontsLoaded] = useFonts({
+    'GoogleSansFlex-Light': require('./src/assets/fonts/GoogleSansFlex-Light.ttf'),
+    'GoogleSansFlex-Regular': require('./src/assets/fonts/GoogleSansFlex-Regular.ttf'),
+    'StackSansHeadline-Light': require('./src/assets/fonts/StackSansHeadline-Light.ttf'),
+  });
+
   // The sheet writes 0..1 here; the stage reads it. Split view means the
   // stage gives up half the sheet's height and the specimen stays visible
   // while the wheels turn.
@@ -55,6 +64,10 @@ export default function App() {
     width / DESIGN_FRAME.width,
     height / DESIGN_FRAME.height,
   );
+
+  if (!fontsLoaded) {
+    return <View style={styles.root} />;
+  }
 
   return (
     <GestureHandlerRootView style={styles.root}>

@@ -383,10 +383,9 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   label: {
+    // Google Sans Flex Regular, per the design; bundled in src/assets/fonts.
+    fontFamily: theme.font.flexRegular,
     fontSize: 16,
     textAlign: 'center',
-    // Design specifies Google Sans Flex Regular; not bundled yet, so this
-    // falls back to the platform UI font.
-    fontWeight: '400',
   },
 });

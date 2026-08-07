@@ -23,8 +23,6 @@ import { theme } from '../theme';
  *   button   43:9668        x44   y563  272x68   <- the specimen slot
  *
  * Known approximations, each forced by the platform:
- *   - Fonts: Stack Sans Headline / Google Sans Flex are not bundled; system
- *     font at weight 300 stands in.
  *   - The negotiated price's 5px gaussian blur: RN cannot blur text, so
  *     stacked ghost copies fake the spread.
  *   - The airline mark ships at 64px in the repo because Figma asset URLs
@@ -221,8 +219,8 @@ const styles = StyleSheet.create({
   },
   headlineLine: {
     color: '#FFFFFF',
+    fontFamily: theme.font.headlineLight,
     fontSize: 24,
-    fontWeight: '300',
     letterSpacing: 0.24,
     lineHeight: 31,
   },
@@ -267,8 +265,8 @@ const styles = StyleSheet.create({
   },
   airlineName: {
     color: '#64748B',
+    fontFamily: theme.font.flexLight,
     fontSize: 11.05,
-    fontWeight: '300',
   },
   timesRow: {
     flexDirection: 'row',
@@ -281,14 +279,14 @@ const styles = StyleSheet.create({
   },
   time: {
     color: '#F1F5F9',
+    fontFamily: theme.font.flexLight,
     fontSize: 15.47,
-    fontWeight: '300',
     lineHeight: 17.68,
   },
   port: {
     color: '#94A3B8',
+    fontFamily: theme.font.flexLight,
     fontSize: 15.47,
-    fontWeight: '300',
   },
   routeLineBox: {
     width: 61.9,
@@ -305,8 +303,8 @@ const styles = StyleSheet.create({
   },
   meta: {
     color: '#64748B',
+    fontFamily: theme.font.flexLight,
     fontSize: 11.05,
-    fontWeight: '300',
   },
   // Shadow lives on a wrapper because the BlurView must clip to its radius.
   priceBarShadow: {
@@ -348,12 +346,13 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     color: theme.color.indigo400,
+    fontFamily: theme.font.flexLight,
     fontSize: 10,
-    fontWeight: '300',
     letterSpacing: 0.4,
   },
   priceValue: {
     color: '#E2E8F0',
+    fontFamily: theme.font.flexRegular,
     fontSize: 20,
   },
   blurGhost: {
