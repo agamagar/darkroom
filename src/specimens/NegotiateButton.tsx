@@ -333,13 +333,16 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   carve: {
     pill: {
-      backgroundColor: theme.color.surface,
-      borderColor: 'rgba(255, 255, 255, 0.04)',
+      // Lilac clay rather than neutral slate: the surface itself carries
+      // the house hue, and both shadows tint with it — lilac-white raise
+      // from the upper left, deep violet fall to the lower right.
+      backgroundColor: '#2B2344',
+      borderColor: 'rgba(200, 186, 255, 0.06)',
       boxShadow:
-        '-6px -8px 18px 0px rgba(160, 170, 255, 0.06), 8px 10px 22px 0px rgba(0, 0, 0, 0.55)',
+        '-6px -8px 18px 0px rgba(196, 181, 253, 0.09), 8px 10px 22px 0px rgba(10, 4, 28, 0.6)',
     },
     carveInset: true,
-    label: { kind: 'solid', color: '#DDE3EE' },
+    label: { kind: 'solid', color: '#E4DDF7' },
   },
 
   /**
@@ -1051,10 +1054,10 @@ function CarveInset() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="carveIn" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#000000" stopOpacity={0.5} />
-            <Stop offset="0.4" stopColor="#000000" stopOpacity={0.1} />
-            <Stop offset="0.8" stopColor="#000000" stopOpacity={0} />
-            <Stop offset="1" stopColor="#AAB4FF" stopOpacity={0.1} />
+            <Stop offset="0" stopColor="#0A041C" stopOpacity={0.55} />
+            <Stop offset="0.4" stopColor="#0A041C" stopOpacity={0.12} />
+            <Stop offset="0.8" stopColor="#0A041C" stopOpacity={0} />
+            <Stop offset="1" stopColor="#C4B5FD" stopOpacity={0.12} />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width} height={FRAME.height} fill="url(#carveIn)" />
