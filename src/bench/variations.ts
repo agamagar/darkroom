@@ -23,7 +23,7 @@ export const TYPES = [
 export type Type = (typeof TYPES)[number];
 
 /** The base UI under the specimen — rendered by `screens.tsx`, not the button. */
-export const SCREENS = ['void', 'globe', 'card', 'light'] as const;
+export const SCREENS = ['void', 'negotiate', 'globe', 'card', 'light'] as const;
 export type Screen = (typeof SCREENS)[number];
 
 export type Selection = {

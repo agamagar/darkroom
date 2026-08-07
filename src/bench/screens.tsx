@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
 import { theme } from '../theme';
+import { NegotiationScreen } from './NegotiationScreen';
 import type { Screen } from './variations';
 
 /**
@@ -16,6 +17,8 @@ export function ScreenBackdrop({ screen }: { screen: Screen }) {
   switch (screen) {
     case 'void':
       return null; // the app background itself
+    case 'negotiate':
+      return <NegotiationScreen />;
     case 'globe':
       return <GlobeBackdrop />;
     case 'card':
