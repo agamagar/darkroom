@@ -389,7 +389,7 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       boxShadow: '0px 6px 24px 0px rgba(20, 8, 50, 0.55)',
     },
     chromeBase: true,
-    label: { kind: 'solid', color: '#1C1038' },
+    label: { kind: 'solid', color: '#FFFFFF' },
   },
 
   /**
@@ -631,11 +631,7 @@ export function NegotiateButton({
             <CarveInset />
           </Animated.View>
         )}
-        {spec.blueprintChrome && (
-          <Animated.View pointerEvents="none" style={[styles.litLayer, dimStyle]}>
-            <BlueprintChrome />
-          </Animated.View>
-        )}
+        {spec.blueprintChrome && <BlueprintChrome press={press} />}
         {spec.concavePress && (
           <Animated.View
             pointerEvents="none"
@@ -1330,16 +1326,21 @@ function ChromeSheen() {
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
+          {/* The rect spans +/-320pt beyond the pill so its boundary can
+              never enter the frame at any tilt (max 150pt) plus press sweep
+              (45pt) plus the 18deg rotation. Stops are renormalised so the
+              bright streak keeps its ~50pt physical width on the wider
+              gradient line. */}
           <SvgLinearGradient id="chromeSheen" x1="0" y1="0.5" x2="1" y2="0.5">
             <Stop offset="0" stopColor="#E2CFFF" stopOpacity={0} />
-            <Stop offset="0.42" stopColor="#E2CFFF" stopOpacity={0.06} />
+            <Stop offset="0.472" stopColor="#E2CFFF" stopOpacity={0.06} />
             <Stop offset="0.5" stopColor="#E2CFFF" stopOpacity={0.5} />
-            <Stop offset="0.58" stopColor="#E2CFFF" stopOpacity={0.06} />
+            <Stop offset="0.528" stopColor="#E2CFFF" stopOpacity={0.06} />
             <Stop offset="1" stopColor="#E2CFFF" stopOpacity={0} />
           </SvgLinearGradient>
         </Defs>
-        <Rect x={-40} y={-20} width={FRAME.width + 80} height={FRAME.height + 40}
-          fill="url(#chromeSheen)" />
+        <Rect x={-320} y={-120} width={FRAME.width + 640}
+          height={FRAME.height + 240} fill="url(#chromeSheen)" />
       </Svg>
     </View>
   );
@@ -1358,7 +1359,43 @@ function ChromeSheen() {
  * resolves toward the rims. The selection chrome (dashed bounds and corner
  * handles) stays unmasked — annotation, not construction.
  */
-function BlueprintChrome() {
+/** One travelling ring: slides from its home to its golden seat as t runs 0->1. */
+function BlueprintRing({
+  x0,
+  target,
+  ry,
+  travel,
+}: {
+  x0: number;
+  target: number;
+  ry: number;
+  travel: SharedValue<number>;
+}) {
+  const props = useAnimatedProps(() => {
+    const t = Easing.out(Easing.cubic)(travel.value);
+    return {
+      cx: x0 + (target - x0) * t,
+      // Rings live until the very end of the travel, then yield to the glow.
+      opacity: 0.45 * (1 - travel.value ** 3),
+    };
+  });
+  return (
+    <AnimatedEllipse
+      cy={BLUEPRINT_CY}
+      ry={ry}
+      rx={Math.max(2, ry * 0.3)}
+      fill="none"
+      stroke="#7FB8FF"
+      strokeWidth={0.8}
+      animatedProps={props}
+    />
+  );
+}
+
+const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
+const BLUEPRINT_CY = 8 + 27; // f.y + fr, hoisted for the ring component
+
+function BlueprintChrome({ press }: { press: SharedValue<number> }) {
   const c = '#7FB8FF';
   const inset = 1.5;
   const w = FRAME.width - inset * 2;
@@ -1394,6 +1431,41 @@ function BlueprintChrome() {
     })
     .filter((ring) => ring.ry > 5);
 
+  // Golden seats: on press each ring travels to the centre, and where it
+  // stops follows phi — per side, the k-th ring out sits at a cumulative
+  // gap of 4 * (phi^k - 1)/(phi - 1): 0, 4, 10.5, 21, 38, 65.6, 110pt.
+  // Rank is by distance from centre, sides kept, so rings never cross.
+  const centre = f.x + f.w / 2;
+  const bySide: Record<'l' | 'r', typeof rings> = { l: [], r: [] };
+  for (const ring of rings) bySide[ring.x < centre ? 'l' : 'r'].push(ring);
+  const seats = new Map<number, number>();
+  for (const side of ['l', 'r'] as const) {
+    bySide[side]
+      .sort((a, b) => Math.abs(a.x - centre) - Math.abs(b.x - centre))
+      .forEach((ring, k) => {
+        const gap = 4 * ((PHI ** k - 1) / (PHI - 1));
+        seats.set(ring.x, centre + (side === 'l' ? -gap : gap));
+      });
+  }
+
+  // The convergence runs on its own clock chasing the press — 550ms out,
+  // 350ms home — so the travel is watchable rather than lost in the 90ms
+  // press-in. The silhouette and handles fade on the same clock.
+  const travel = useSharedValue(0);
+  useAnimatedReaction(
+    () => press.value > 0.05,
+    (active, prev) => {
+      if (active === prev) return;
+      travel.value = withTiming(active ? 1 : 0, {
+        duration: active ? 550 : 350,
+        easing: Easing.linear,
+      });
+    },
+  );
+  const chromeFade = useAnimatedStyle(() => ({
+    opacity: 1 - travel.value,
+  }));
+
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
@@ -1411,25 +1483,27 @@ function BlueprintChrome() {
         </Defs>
 
         <G mask="url(#fadeMask)">
-          {/* Silhouette. */}
+          {/* Section rings — travelling to their golden seats on press. */}
+          {rings.map(({ x, ry }) => (
+            <BlueprintRing key={x} x0={x} target={seats.get(x) ?? centre}
+              ry={ry} travel={travel} />
+          ))}
+        </G>
+      </Svg>
+
+      {/* Silhouette + handles fade as the press renders the button. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, chromeFade]}>
+        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
           <Rect x={f.x} y={f.y} width={f.w} height={f.h} rx={fr} fill="none"
             stroke={c} strokeOpacity={0.75} strokeWidth={1} />
-
-          {/* Section rings — the capsule turned in depth. */}
-          {rings.map(({ x, rx, ry }) => (
-            <Ellipse key={x} cx={x} cy={cy} rx={rx} ry={ry} fill="none"
-              stroke={c} strokeOpacity={0.45} strokeWidth={0.8} />
+          {handles.map(([hx, hy]) => (
+            <Rect key={`${hx}-${hy}`} x={hx - 3} y={hy - 3} width={6} height={6}
+              fill={theme.color.bg} stroke={c} strokeWidth={1} />
           ))}
-
-        </G>
-
-        {/* Corner handles — annotation, unmasked. The dashed bounds are
-            gone; the wireframe silhouette carries the shape. */}
-        {handles.map(([hx, hy]) => (
-          <Rect key={`${hx}-${hy}`} x={hx - 3} y={hy - 3} width={6} height={6}
-            fill={theme.color.bg} stroke={c} strokeWidth={1} />
-        ))}
-      </Svg>
+        </Svg>
+      </Animated.View>
     </View>
   );
 }
