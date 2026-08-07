@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
+  cancelAnimation,
   useAnimatedProps,
+  useAnimatedReaction,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -311,13 +313,22 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   safelight: {
     pill: {
-      backgroundColor: '#170403',
-      borderColor: 'rgba(255, 69, 48, 0.12)',
-      boxShadow: 'inset 0px -12px 36px 0px rgba(214, 40, 24, 0.5)',
+      backgroundColor: '#140302',
+      borderColor: 'rgba(255, 90, 60, 0.14)',
+      // The lamp hangs ABOVE the bench, as it does in a real darkroom.
+      boxShadow: 'inset 0px 14px 36px 0px rgba(214, 40, 24, 0.5)',
     },
-    glow: { edge: 'bottom', color: '#D62818', core: '#FF6A45', rest: 0.55, lit: 0.55 },
+    glow: {
+      edge: 'top',
+      color: '#D62818',
+      core: '#FF7A50',
+      rest: 0.5,
+      lit: 0.5,
+      squash: 0.75,
+      spread: 1.3,
+    },
     developLabel: true,
-    label: { kind: 'solid', color: '#FFE8E2' },
+    label: { kind: 'solid', color: '#FFF3EE' },
   },
 
   /**
@@ -490,9 +501,29 @@ export function NegotiateButton({
   const litStyle = useAnimatedStyle(() => ({ opacity: press.value }));
   /** Inverse of litStyle — for chrome the press must REMOVE, not add. */
   const dimStyle = useAnimatedStyle(() => ({ opacity: 1 - press.value }));
-  /** Photo-paper development: latent at rest, full under the press. */
+  /**
+   * Photo-paper development on chemical time, not press time. The press is
+   * 90ms; a print is not. `develop` chases the press's on/off state on its
+   * own clock — 750ms out-ease surfacing, 450ms fade back into the bath —
+   * so holding the button feels like watching the image come up.
+   */
+  const develop = useSharedValue(0);
+  useAnimatedReaction(
+    () => press.value > 0.05,
+    (active, prev) => {
+      if (active === prev) return;
+      develop.value = withTiming(active ? 1 : 0, {
+        duration: active ? 750 : 450,
+        easing: Easing.out(Easing.cubic),
+      });
+    },
+  );
   const developStyle = useAnimatedStyle(() => ({
-    opacity: spec.developLabel ? 0.22 + press.value * 0.78 : 1,
+    opacity: spec.developLabel ? 0.35 + develop.value * 0.65 : 1,
+  }));
+  /** Under safelight, undeveloped paper reads red-tinted, not white. */
+  const developTintStyle = useAnimatedStyle(() => ({
+    opacity: (1 - develop.value) * 0.85,
   }));
   /** Chrome sheen: tilt slides the reflection, the press flicks it across. */
   const sheenStyle = useAnimatedStyle(() => ({
@@ -568,7 +599,7 @@ export function NegotiateButton({
           <>
             <NeonRing lit={false} />
             <Animated.View pointerEvents="none" style={[styles.litLayer, litStyle]}>
-              <NeonRing lit />
+              <NeonRing lit press={press} />
             </Animated.View>
           </>
         )}
@@ -602,6 +633,15 @@ export function NegotiateButton({
         {showIcon && <NegotiateGlyph kind={iconKind} />}
         <Animated.View style={developStyle}>
           <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
+          {spec.developLabel && (
+            <Animated.View
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFill, developTintStyle]}>
+              <ButtonLabel spec={{ kind: 'solid', color: '#D96A55' }}>
+                {label}
+              </ButtonLabel>
+            </Animated.View>
+          )}
         </Animated.View>
         {spec.gradientBorder &&
           (spec.concavePress ? (
@@ -1146,23 +1186,41 @@ function NeonEchoRing({
 }
 
 /** The neon tube: a bright ring hugging the rim, haloed inward and out. */
-function NeonRing({ lit }: { lit: boolean }) {
+function NeonRing({
+  lit,
+  press,
+}: {
+  lit: boolean;
+  press?: SharedValue<number>;
+}) {
   const inset = 2;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
   const reducedMotion = useReducedMotion();
   // One clock drives all five rings; their stagger comes from phase offsets.
-  // Runs only on the lit copy, whose visibility the press already gates.
-  // Reduce Motion pins it: rings hold at their golden-ratio homes, still.
+  // The PRESS owns the clock: press-in starts the loop from zero (echoes
+  // are born at the tube, deterministically, instead of catching a free-
+  // running loop mid-phase) and it repeats for as long as the finger stays
+  // down — release cancels and rewinds. Reduce Motion never starts it:
+  // rings hold at their golden-ratio homes, still.
   const sinkT = useSharedValue(0);
-  useEffect(() => {
-    if (!lit || reducedMotion) return;
-    sinkT.value = 0;
-    sinkT.value = withRepeat(
-      withTiming(1, { duration: NEON_SINK_MS, easing: Easing.linear }),
-      -1,
-    );
-  }, [lit, reducedMotion, sinkT]);
+  useAnimatedReaction(
+    () => (press ? press.value > 0.05 : false),
+    (active, prev) => {
+      if (reducedMotion) return;
+      if (active && prev !== true) {
+        sinkT.value = 0;
+        sinkT.value = withRepeat(
+          withTiming(1, { duration: NEON_SINK_MS, easing: Easing.linear }),
+          -1,
+        );
+      } else if (!active && prev === true) {
+        cancelAnimation(sinkT);
+        sinkT.value = withTiming(0, { duration: 160 });
+      }
+    },
+    [reducedMotion],
+  );
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
