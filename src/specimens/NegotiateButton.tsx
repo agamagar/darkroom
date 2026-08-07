@@ -336,13 +336,13 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       // Lilac clay rather than neutral slate: the surface itself carries
       // the house hue, and both shadows tint with it — lilac-white raise
       // from the upper left, deep violet fall to the lower right.
-      backgroundColor: '#2B2344',
-      borderColor: 'rgba(200, 186, 255, 0.06)',
+      backgroundColor: '#453A6B',
+      borderColor: 'rgba(210, 198, 255, 0.1)',
       boxShadow:
-        '-6px -8px 18px 0px rgba(196, 181, 253, 0.09), 8px 10px 22px 0px rgba(10, 4, 28, 0.6)',
+        '-6px -8px 18px 0px rgba(200, 186, 255, 0.16), 8px 10px 22px 0px rgba(10, 4, 28, 0.65)',
     },
     carveInset: true,
-    label: { kind: 'solid', color: '#E4DDF7' },
+    label: { kind: 'solid', color: '#F1ECFF' },
   },
 
   /**
@@ -352,12 +352,12 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   chrome: {
     pill: {
-      backgroundColor: '#8E82B8',
-      borderColor: 'rgba(255, 255, 255, 0.35)',
+      backgroundColor: '#7A69C4',
+      borderColor: 'rgba(230, 220, 255, 0.4)',
       boxShadow: '0px 6px 24px 0px rgba(20, 8, 50, 0.55)',
     },
     chromeBase: true,
-    label: { kind: 'solid', color: '#17131C' },
+    label: { kind: 'solid', color: '#1C1038' },
   },
 
   /**
@@ -1123,11 +1123,11 @@ function ChromeBase() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="chromeBands" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#F3F0FC" />
-            <Stop offset="0.42" stopColor="#B6ABE4" />
-            <Stop offset="0.5" stopColor="#6A5E92" />
-            <Stop offset="0.62" stopColor="#9A8ECC" />
-            <Stop offset="1" stopColor="#DED7F4" />
+            <Stop offset="0" stopColor="#CBB8FF" />
+            <Stop offset="0.42" stopColor="#8B7CF6" />
+            <Stop offset="0.5" stopColor="#453473" />
+            <Stop offset="0.62" stopColor="#7563C9" />
+            <Stop offset="1" stopColor="#B4A2F5" />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width} height={FRAME.height} fill="url(#chromeBands)" />
@@ -1143,11 +1143,11 @@ function ChromeSheen() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="chromeSheen" x1="0" y1="0.5" x2="1" y2="0.5">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
-            <Stop offset="0.42" stopColor="#FFFFFF" stopOpacity={0.05} />
-            <Stop offset="0.5" stopColor="#FFFFFF" stopOpacity={0.55} />
-            <Stop offset="0.58" stopColor="#FFFFFF" stopOpacity={0.05} />
-            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="0" stopColor="#EAE1FF" stopOpacity={0} />
+            <Stop offset="0.42" stopColor="#EAE1FF" stopOpacity={0.06} />
+            <Stop offset="0.5" stopColor="#EAE1FF" stopOpacity={0.5} />
+            <Stop offset="0.58" stopColor="#EAE1FF" stopOpacity={0.06} />
+            <Stop offset="1" stopColor="#EAE1FF" stopOpacity={0} />
           </SvgLinearGradient>
         </Defs>
         <Rect x={-40} y={-20} width={FRAME.width + 80} height={FRAME.height + 40}
