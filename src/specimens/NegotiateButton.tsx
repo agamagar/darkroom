@@ -1233,9 +1233,6 @@ function BlueprintChrome() {
               stroke={c} strokeOpacity={0.45} strokeWidth={0.8} />
           ))}
 
-          {/* Axis of revolution. */}
-          <Line x1={0} y1={cy} x2={FRAME.width} y2={cy} stroke={c}
-            strokeOpacity={0.5} strokeWidth={0.8} strokeDasharray="8 4" />
         </G>
 
         {/* Selection chrome — annotation, unmasked. */}
