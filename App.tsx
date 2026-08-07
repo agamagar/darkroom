@@ -87,10 +87,16 @@ export default function App() {
     />
   );
 
-  // The negotiate screen is a measured 360x780 design canvas: scale it to
-  // the device and drop the specimen into the design's own button slot.
-  // Every other screen is a wash behind a centred specimen.
+  // The negotiate screen is a measured 360x780 design canvas: fit it to the
+  // device and drop the specimen into the design's own button slot. Every
+  // other screen is a wash behind a centred specimen.
+  //
+  // Capped at 1. A transform scale rasterises the subtree and then resamples
+  // it, so scaling UP (1.12x on this phone) softens every edge and every
+  // glyph on the screen. Below 1 the resample is a downsample, which is
+  // harmless; at 1 there is no transform at all and it renders natively.
   const designScale = Math.min(
+    1,
     width / DESIGN_FRAME.width,
     height / DESIGN_FRAME.height,
   );
@@ -103,13 +109,18 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
       <GestureDetector gesture={toggleFloater}>
-        <Animated.View style={[styles.stage, stageStyle]}>
+        <Animated.View
+          style={[
+            styles.stage,
+            selection.screen === 'negotiate' && styles.stageBlack,
+            stageStyle,
+          ]}>
         {selection.screen === 'negotiate' ? (
           <View
             style={{
               width: DESIGN_FRAME.width,
               height: DESIGN_FRAME.height,
-              transform: [{ scale: designScale }],
+              transform: designScale === 1 ? undefined : [{ scale: designScale }],
             }}>
             <ScreenBackdrop screen={selection.screen} />
             <View
@@ -182,5 +193,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // The negotiate canvas is pure black and no longer stretches to fill;
+  // matching the stage keeps its edge invisible.
+  stageBlack: {
+    backgroundColor: '#000000',
   },
 });

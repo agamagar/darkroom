@@ -380,10 +380,16 @@ export function NegotiateButton({
             {spec.glow.rest > 0 && (
               <GlowWash config={spec.glow} lit={false} shift={glowShift} />
             )}
+            {/*
+              No needsOffscreenAlphaCompositing here: it pushes the subtree
+              into an offscreen buffer that iOS may allocate at 1x rather
+              than the device's 3x, which pixelates everything inside it.
+              The layer holds a single SVG, so plain opacity composites
+              correctly without it.
+            */}
             <Animated.View
               pointerEvents="none"
-              style={[styles.litLayer, litStyle]}
-              needsOffscreenAlphaCompositing>
+              style={[styles.litLayer, litStyle]}>
               <GlowWash config={spec.glow} lit shift={glowShift} />
             </Animated.View>
           </View>
@@ -832,12 +838,15 @@ function NegotiateGlyph({ kind = 'trend' }: { kind?: ArrowKind }) {
  * reference's meshed body. Faint on purpose — texture, not pattern.
  */
 function DotMesh() {
+  // Larger, sparser, fainter than the first pass: r=0.7 dots land near the
+  // sub-pixel floor once the pill is composited, and alias into grain rather
+  // than reading as a mesh. 390 nodes was also a lot to rasterise per frame.
   const dots: React.ReactNode[] = [];
-  const step = 7;
+  const step = 9;
   for (let x = step / 2; x < FRAME.width; x += step) {
     for (let y = step / 2; y < FRAME.height; y += step) {
       dots.push(
-        <Circle key={`${x}-${y}`} cx={x} cy={y} r={0.7} fill="#FFFFFF" />,
+        <Circle key={`${x}-${y}`} cx={x} cy={y} r={1.1} fill="#FFFFFF" />,
       );
     }
   }
@@ -847,7 +856,7 @@ function DotMesh() {
         width={FRAME.width}
         height={FRAME.height}
         style={styles.glowSvg}
-        opacity={0.05}>
+        opacity={0.045}>
         {dots}
       </Svg>
     </View>
