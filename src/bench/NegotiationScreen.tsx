@@ -1,3 +1,4 @@
+import { BlurView } from 'expo-blur';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path } from 'react-native-svg';
 
@@ -5,82 +6,127 @@ import { theme } from '../theme';
 
 /**
  * Figma: Portfolio 2026 · Site System, node 43:7125 ("Start negotiation") —
- * the FTUE negotiation demo. Headline, a three-deep stack of flight cards,
- * and the public/negotiated price bar with the negotiated figure blurred.
+ * the FTUE negotiation demo, measured node by node.
  *
- * Built as a bench SCREEN: everything from the design EXCEPT the Negotiate
- * button, which is the specimen's slot — the stage centres whatever variant
- * is selected roughly where the design places the button.
+ * Rendered as an absolute 360x780 design canvas; the bench scales the canvas
+ * to the device and drops the selected specimen into the design's own button
+ * slot (SPECIMEN_SLOT below), so every element sits at its measured
+ * coordinate instead of being approximated with flex.
  *
- * Deliberate departures, both bench-driven: the stack is scaled 0.92 so it
- * clears the specimen slot on tall devices, and the negotiated price uses
- * layered ghost text instead of a real gaussian blur (RN has no text blur;
- * three offset copies at low opacity read the same at 20px).
+ * Coordinate provenance (all from get_design_context / metadata):
+ *   headline 43:9706        x24   y143  312x92, lines at +12/+49, 24px/0.24
+ *   stack    43:8701        x7.6  y294  345x252
+ *     back   43:8704        x50.5 y294  259x143   (absolute = 18.6 + child x)
+ *     mid    43:8951        x34.0 y309  292x142
+ *     front  43:9198        x18.6 y323  322.7x142.6
+ *     bar    43:9445        x32.0 y439  296x84
+ *   button   43:9668        x44   y563  272x68   <- the specimen slot
+ *
+ * Known approximations, each forced by the platform:
+ *   - Fonts: Stack Sans Headline / Google Sans Flex are not bundled; system
+ *     font at weight 300 stands in.
+ *   - The negotiated price's 5px gaussian blur: RN cannot blur text, so
+ *     stacked ghost copies fake the spread.
+ *   - The airline mark ships at 64px in the repo because Figma asset URLs
+ *     expire in 7 days.
  */
 
-const CARD_RADIUS = 22;
+export const DESIGN_FRAME = { width: 360, height: 780 } as const;
+/** Where the design places the Negotiate button — the bench fills this. */
+export const SPECIMEN_SLOT = { x: 44, y: 563, width: 272, height: 68 } as const;
 
 export function NegotiationScreen() {
   return (
-    <View style={styles.fill} pointerEvents="none">
+    <View style={styles.canvas} pointerEvents="none">
+      {/* Headline — 43:9706 */}
       <View style={styles.headline}>
-        <Text style={styles.headlineWhite}>Don’t just search</Text>
-        <Text style={styles.headlineIndigo}>Ask Away to Negotiate</Text>
+        <Text style={styles.headlineLine}>Don’t just search</Text>
+        <Text style={[styles.headlineLine, styles.headlineIndigo]}>
+          Ask Away to Negotiate
+        </Text>
       </View>
 
-      <View style={styles.stack}>
-        {/* Two ghost cards peeking out behind the front one. */}
-        <FlightCard width={259} style={styles.cardBack} ghost />
-        <FlightCard width={292} style={styles.cardMid} ghost />
-        <FlightCard width={323} style={styles.cardFront} />
-        <PriceBar />
-      </View>
+      {/* Card stack — 43:8701. Ghost cards carry full content in the file
+          but only their top padding strip escapes occlusion; rendering the
+          strip alone is pixel-identical and cheaper. */}
+      <GhostCard left={50.5} top={294} width={259} height={143} border={1.3} />
+      <GhostCard left={34} top={309} width={292} height={142} border={1.3} />
+      <FrontCard />
+      <PriceBar />
     </View>
   );
 }
 
-function FlightCard({
+function GhostCard({
+  left,
+  top,
   width,
-  ghost = false,
-  style,
+  height,
+  border,
 }: {
+  left: number;
+  top: number;
   width: number;
-  ghost?: boolean;
-  style?: object;
+  height: number;
+  border: number;
 }) {
   return (
-    <View style={[styles.card, { width }, style]}>
-      {!ghost && (
-        <>
-          <View style={styles.airlineRow}>
-            <Image
-              source={require('../assets/etihad-logo.png')}
-              style={styles.airlineLogo}
-            />
-            <Text style={styles.airlineName}>Etihad Airways</Text>
-          </View>
-          <View style={styles.timesRow}>
-            <Text style={styles.time}>06:50</Text>
-            <Text style={styles.port}>DEL</Text>
+    <View
+      style={[styles.card, { left, top, width, height, borderWidth: border }]}
+    />
+  );
+}
+
+/** 43:9198 — border 0.5, radius 22.105, content column pt15.5/pb39.8 gap8.8. */
+function FrontCard() {
+  return (
+    <View style={[styles.card, styles.frontCard]}>
+      <View style={styles.frontCardContent}>
+        {/* Airline row — 43:9214: 17.7px mark, 6.6 gap, 11.05 Light #64748B */}
+        <View style={styles.airlineRow}>
+          <Image
+            source={require('../assets/etihad-logo.png')}
+            style={styles.airlineLogo}
+          />
+          <Text style={styles.airlineName}>Etihad Airways</Text>
+        </View>
+
+        {/* Times row — Component 1489: cells padded 2.21, route line 61.9 wide */}
+        <View style={styles.timesRow}>
+          <Text style={[styles.time, styles.cell]}>06:50</Text>
+          <Text style={[styles.port, styles.cell]}>DEL</Text>
+          <View style={styles.routeLineBox}>
             <RouteLine />
-            <Text style={styles.time}>22:25</Text>
-            <Text style={styles.port}>DXB</Text>
           </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.meta}>50h 35m</Text>
-            <View style={styles.metaDot} />
-            <Text style={styles.meta}>2 stops</Text>
-          </View>
-        </>
-      )}
+          <Text style={[styles.time, styles.cell]}>22:25</Text>
+          <Text style={[styles.port, styles.cell]}>DXB</Text>
+        </View>
+
+        {/* Meta row — 43:9439: gap 2.21, px 4.42, dash glyph 9.9x8.8 */}
+        <View style={styles.metaRow}>
+          <Text style={styles.meta}>50h 35m</Text>
+          <Svg width={9.95} height={8.84} viewBox="0 0 9.94737 8.8421">
+            <Line
+              x1={4.42}
+              y1={4.42}
+              x2={5.53}
+              y2={4.42}
+              stroke="#52525E"
+              strokeWidth={1.105}
+              strokeLinecap="round"
+            />
+          </Svg>
+          <Text style={styles.meta}>2 stops</Text>
+        </View>
+      </View>
     </View>
   );
 }
 
-/** The exported asset is a plain 1.1pt line, #52525E — drawn, not shipped. */
+/** Exported asset is a single 1.105pt stroke, #52525E, x 4.42 -> 48.63. */
 function RouteLine() {
   return (
-    <Svg width={53} height={9} viewBox="0 0 53.0526 8.8421">
+    <Svg width={53.05} height={8.84} viewBox="0 0 53.0526 8.8421">
       <Line
         x1={4.42}
         y1={4.42}
@@ -93,157 +139,210 @@ function RouteLine() {
   );
 }
 
+/**
+ * 43:9445 — glass bar: bg rgba(15,11,43,0.04) over a 5.17px backdrop blur,
+ * border 0.5 #443C7A, radius 24, glow 0 0 16 #261D4C. Left column flexes,
+ * right column is a fixed 132, 16px chevron between, 8.84 gap, padded
+ * 20/16/16.
+ */
 function PriceBar() {
   return (
-    <View style={styles.priceBar}>
-      <View style={styles.priceCol}>
-        <Text style={styles.priceLabel}>PUBLIC PRICE</Text>
-        <Text style={styles.priceValue}>₹16,529</Text>
-      </View>
-      <Svg width={16} height={16} viewBox="0 0 16 16">
-        <Path
-          d="M6 4L10 8L6 12"
-          stroke="#E2E8F0"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-      </Svg>
-      <View style={styles.priceCol}>
-        <Text style={styles.priceLabel}>NEGOTIATED PRICE</Text>
-        <BlurredPrice>₹15,529</BlurredPrice>
-      </View>
+    <View style={styles.priceBarShadow}>
+      <BlurView intensity={12} tint="dark" style={styles.priceBar}>
+        <View style={styles.priceBarFill} />
+        <View style={styles.priceColLeft}>
+          <Text style={styles.priceLabel}>PUBLIC PRICE</Text>
+          <Text style={styles.priceValue}>₹16,529</Text>
+        </View>
+        <Svg width={16} height={16} viewBox="0 0 16 16">
+          <Path
+            d="M6 4L10 8L6 12"
+            stroke="#E2E8F0"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+        </Svg>
+        <View style={styles.priceColRight}>
+          <Text style={styles.priceLabel}>NEGOTIATED PRICE</Text>
+          <BlurredPrice>₹15,529</BlurredPrice>
+        </View>
+      </BlurView>
     </View>
   );
 }
 
 /**
- * The design blurs the negotiated figure (blur 5px). RN cannot blur text, so
- * three offset ghost copies fake the spread — at 20px the eye reads "there is
- * a number here and you cannot have it yet", which is the design's point.
+ * Ghost-copy stand-in for the design's 5px text blur: four offset copies
+ * spread the glyph edges, a dim core keeps the mass. Reads as "a number you
+ * cannot have yet", which is the design's point.
  */
 function BlurredPrice({ children }: { children: string }) {
+  const offsets: [number, number][] = [
+    [-3, 0],
+    [3, 0],
+    [-1.5, 1],
+    [1.5, -1],
+  ];
   return (
     <View>
-      <Text style={[styles.priceValue, styles.blurGhost, { left: -2 }]}>
-        {children}
-      </Text>
-      <Text style={[styles.priceValue, styles.blurGhost, { left: 2 }]}>
-        {children}
-      </Text>
-      <Text style={[styles.priceValue, { opacity: 0.35 }]}>{children}</Text>
+      {offsets.map(([dx, dy]) => (
+        <Text
+          key={`${dx},${dy}`}
+          style={[
+            styles.priceValue,
+            styles.blurGhost,
+            { transform: [{ translateX: dx }, { translateY: dy }] },
+          ]}>
+          {children}
+        </Text>
+      ))}
+      <Text style={[styles.priceValue, { opacity: 0.4 }]}>{children}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
+  canvas: {
+    position: 'absolute',
+    width: DESIGN_FRAME.width,
+    height: DESIGN_FRAME.height,
+    // The design's screen is pure black, unlike the bench's navy void.
+    backgroundColor: '#000000',
   },
   headline: {
-    paddingTop: 48,
+    position: 'absolute',
+    left: 24,
+    top: 143,
+    width: 312,
+    paddingVertical: 12,
     gap: 6,
     alignItems: 'center',
   },
-  headlineWhite: {
+  headlineLine: {
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: '300',
     letterSpacing: 0.24,
+    lineHeight: 31,
   },
   headlineIndigo: {
     color: theme.color.indigo500,
-    fontSize: 24,
-    fontWeight: '300',
-    letterSpacing: 0.24,
-  },
-  stack: {
-    marginTop: 24,
-    width: 345,
-    height: 252,
-    alignItems: 'center',
-    // Clears the specimen slot on tall devices; see header comment.
-    transform: [{ scale: 0.92 }],
   },
   card: {
     position: 'absolute',
-    height: 143,
-    borderRadius: CARD_RADIUS,
+    borderRadius: 22.105,
     backgroundColor: '#000000',
-    borderWidth: 1.3,
     borderColor: '#000000',
     boxShadow: '0px 0px 10px 0px rgba(255, 255, 255, 0.15)',
-    alignItems: 'center',
-    paddingTop: 15,
-    gap: 9,
+    overflow: 'hidden',
   },
-  cardBack: { top: 0 },
-  cardMid: { top: 15 },
-  cardFront: { top: 29 },
+  frontCard: {
+    left: 18.6,
+    top: 323,
+    width: 322.7,
+    height: 142.6,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  frontCardContent: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 15.47,
+    paddingBottom: 39.79,
+    paddingHorizontal: 15.47,
+    gap: 8.84,
+  },
   airlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    justifyContent: 'center',
+    gap: 6.63,
+    width: '100%',
   },
   airlineLogo: {
-    width: 18,
-    height: 18,
+    width: 17.68,
+    height: 17.68,
   },
   airlineName: {
     color: '#64748B',
-    fontSize: 11,
+    fontSize: 11.05,
     fontWeight: '300',
   },
   timesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  cell: {
+    padding: 2.21,
   },
   time: {
     color: '#F1F5F9',
-    fontSize: 15.5,
+    fontSize: 15.47,
     fontWeight: '300',
+    lineHeight: 17.68,
   },
   port: {
     color: '#94A3B8',
-    fontSize: 15.5,
+    fontSize: 15.47,
     fontWeight: '300',
+  },
+  routeLineBox: {
+    width: 61.9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4.42,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    gap: 2.21,
+    paddingHorizontal: 4.42,
   },
   meta: {
     color: '#64748B',
-    fontSize: 11,
+    fontSize: 11.05,
     fontWeight: '300',
   },
-  metaDot: {
-    width: 2,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: '#52525E',
-  },
-  priceBar: {
+  // Shadow lives on a wrapper because the BlurView must clip to its radius.
+  priceBarShadow: {
     position: 'absolute',
-    top: 145,
+    left: 32,
+    top: 439,
     width: 296,
     height: 84,
+    borderRadius: 24,
+    boxShadow: '0px 0px 16px 0px #261D4C',
+  },
+  priceBar: {
+    width: '100%',
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 20,
     paddingRight: 16,
-    gap: 9,
+    paddingVertical: 16,
+    gap: 8.84,
     borderRadius: 24,
     borderWidth: 0.5,
     borderColor: '#443C7A',
-    backgroundColor: 'rgba(15, 11, 43, 0.9)',
-    boxShadow: '0px 0px 16px 0px #261D4C',
+    overflow: 'hidden',
   },
-  priceCol: {
+  priceBarFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 11, 43, 0.04)',
+  },
+  priceColLeft: {
     flex: 1,
+    alignItems: 'center',
+    gap: 6,
+  },
+  priceColRight: {
+    width: 132,
     alignItems: 'center',
     gap: 6,
   },
@@ -251,7 +350,7 @@ const styles = StyleSheet.create({
     color: theme.color.indigo400,
     fontSize: 10,
     fontWeight: '300',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
   priceValue: {
     color: '#E2E8F0',
@@ -259,7 +358,6 @@ const styles = StyleSheet.create({
   },
   blurGhost: {
     position: 'absolute',
-    top: 0,
-    opacity: 0.18,
+    opacity: 0.15,
   },
 });

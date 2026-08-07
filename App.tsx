@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -8,6 +8,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { BenchSheet, SHEET_HEIGHT } from './src/bench/BenchSheet';
+import {
+  DESIGN_FRAME,
+  SPECIMEN_SLOT,
+} from './src/bench/NegotiationScreen';
 import { ScreenBackdrop } from './src/bench/screens';
 import { VariantPicker } from './src/bench/VariantPicker';
 import {
@@ -24,32 +28,64 @@ import { theme } from './src/theme';
 export default function App() {
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { width, height } = useWindowDimensions();
 
   // The sheet writes 0..1 here; the stage reads it. Split view means the
-  // specimen gives up half the sheet's height and stays centred in the rest,
-  // visible while the wheels turn.
+  // stage gives up half the sheet's height and the specimen stays visible
+  // while the wheels turn.
   const sheetProgress = useSharedValue(0);
   const stageStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: (-sheetProgress.value * SHEET_HEIGHT) / 2 }],
   }));
 
+  const specimen = (
+    <NegotiateButton
+      // Remounts on selection change so a specimen that pins its press
+      // value at mount picks the new one up.
+      key={`${selection.state}-${selection.type}`}
+      onPress={() => {}}
+      {...propsFor(selection)}
+    />
+  );
+
+  // The negotiate screen is a measured 360x780 design canvas: scale it to
+  // the device and drop the specimen into the design's own button slot.
+  // Every other screen is a wash behind a centred specimen.
+  const designScale = Math.min(
+    width / DESIGN_FRAME.width,
+    height / DESIGN_FRAME.height,
+  );
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
-      {/* The base UI behind everything — the backdrop moves with the stage
-          so specimen and surface read as one screen. */}
-      <SafeAreaView style={styles.root}>
-        <Animated.View style={[styles.stage, stageStyle]}>
-          <ScreenBackdrop screen={selection.screen} />
-          <NegotiateButton
-            // Remounts on selection change so a specimen that pins its press
-            // value at mount picks the new one up.
-            key={`${selection.state}-${selection.type}`}
-            onPress={() => {}}
-            {...propsFor(selection)}
-          />
-        </Animated.View>
-      </SafeAreaView>
+      <Animated.View style={[styles.stage, stageStyle]}>
+        {selection.screen === 'negotiate' ? (
+          <View
+            style={{
+              width: DESIGN_FRAME.width,
+              height: DESIGN_FRAME.height,
+              transform: [{ scale: designScale }],
+            }}>
+            <ScreenBackdrop screen={selection.screen} />
+            <View
+              style={{
+                position: 'absolute',
+                left: SPECIMEN_SLOT.x,
+                top: SPECIMEN_SLOT.y,
+                width: SPECIMEN_SLOT.width,
+                height: SPECIMEN_SLOT.height,
+              }}>
+              {specimen}
+            </View>
+          </View>
+        ) : (
+          <>
+            <ScreenBackdrop screen={selection.screen} />
+            {specimen}
+          </>
+        )}
+      </Animated.View>
 
       <BenchSheet
         visible={sheetOpen}
