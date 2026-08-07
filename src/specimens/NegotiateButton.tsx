@@ -852,9 +852,16 @@ function ConcaveDish() {
             cy={inset.y}
             rx={168.79}
             ry={70.5}>
+            {/* The measured four stops, resampled to nine with smoothstep
+                between them — same endpoints, no visible banding. */}
             <Stop offset="0" stopColor="#181140" />
+            <Stop offset="0.125" stopColor="#1D144D" />
             <Stop offset="0.25" stopColor="#22185A" />
+            <Stop offset="0.375" stopColor="#261C66" />
             <Stop offset="0.5" stopColor="#2B1F73" />
+            <Stop offset="0.625" stopColor="#302285" />
+            <Stop offset="0.75" stopColor="#352596" />
+            <Stop offset="0.875" stopColor="#39289E" />
             <Stop offset="1" stopColor="#3E2CA6" />
           </RadialGradient>
         </Defs>
@@ -866,6 +873,27 @@ function ConcaveDish() {
           rx={h / 2}
           fill="url(#concaveDish)"
         />
+        {/* Feather: the dish's bright rim melts into the base over a few pt
+            instead of terminating on a hard rounded-rect edge — stacked
+            fading strokes standing in for the gaussian RN does not have. */}
+        {[
+          { grow: 1, opacity: 0.3, width: 2 },
+          { grow: 2.5, opacity: 0.16, width: 2.5 },
+          { grow: 4.5, opacity: 0.07, width: 3 },
+        ].map(({ grow, opacity, width }) => (
+          <Rect
+            key={grow}
+            x={inset.x - grow}
+            y={inset.y - grow}
+            width={w + grow * 2}
+            height={h + grow * 2}
+            rx={(h + grow * 2) / 2}
+            fill="none"
+            stroke="#3E2CA6"
+            strokeOpacity={opacity}
+            strokeWidth={width}
+          />
+        ))}
       </Svg>
     </View>
   );
