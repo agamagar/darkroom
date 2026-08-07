@@ -69,7 +69,8 @@ export type NegotiateButtonVariant =
   | 'eclipse'
   | 'ember'
   | 'molten'
-  | 'drawn';
+  | 'drawn'
+  | 'concave';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -91,6 +92,12 @@ type VariantSpec = {
     lit: number;
     squash?: number;
     core?: string;
+    /**
+     * Multiplies the ellipse radii. Above 1 the wash runs past the pill on
+     * every side, so `overflow: hidden` clips it mid-falloff instead of the
+     * gradient visibly ending inside the button.
+     */
+    spread?: number;
   };
   /** A halftone dot mesh over the fill, as on liquid-UI surfaces. */
   mesh?: boolean;
@@ -104,8 +111,22 @@ type VariantSpec = {
    * borderColor, so this draws the ring as an SVG stroke.
    */
   gradientBorder?: boolean;
+  /**
+   * Node 51:92's dished surface — a radial that is DARK at its centre and
+   * bright at the rim, so the face reads pressed in. The design ties it to
+   * the press: absent at rest, full while held.
+   */
+  dish?: boolean;
   /** Label treatment. Gradient is the design's masked fill. */
-  label: { kind: 'gradient' } | { kind: 'solid'; color: string };
+  label:
+    | {
+        kind: 'gradient';
+        fontSize?: number;
+        colors?: readonly [string, string, ...string[]];
+        locations?: readonly [number, number, ...number[]];
+        angle?: { start: { x: number; y: number }; end: { x: number; y: number } };
+      }
+    | { kind: 'solid'; color: string };
 };
 
 const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
@@ -184,6 +205,9 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       core: theme.color.indigo400,
       rest: 0.9,
       lit: 1,
+      // Wider than the pill on both axes: the falloff gets clipped by the
+      // edge rather than dying visibly inside it.
+      spread: 2.4,
     },
     mesh: true,
     label: { kind: 'solid', color: '#F5F0EC' },
@@ -207,6 +231,31 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     gradientBorder: true,
     glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.9 },
     label: { kind: 'gradient' },
+  },
+
+  /**
+   * Port of node 51:92 ("Concave button"), the one design that already has a
+   * pressed variant. At rest: primary/950 lit from the top edge by an inset
+   * #4D00FF throw. Pressed: a dish appears — a radial that is DARKEST at its
+   * centre (#181140) and brightest at the rim (#3E2CA6), so the face reads
+   * pushed in. The press does not brighten this button, it hollows it.
+   */
+  concave: {
+    pill: {
+      backgroundColor: theme.color.primary950,
+      borderWidth: 0,
+      boxShadow: 'inset 0px 8px 36px 0px #4D00FF',
+    },
+    dish: true,
+    label: {
+      kind: 'gradient',
+      // 14px here, not the 16 of node 31:293; the sheen is a white band with
+      // one grey notch at 66%, angled 114.6deg.
+      fontSize: 14,
+      colors: ['#FFFFFF', '#FFFFFF', '#DBDBDB', '#FFFFFF'],
+      locations: [0.479, 0.623, 0.662, 0.698],
+      angle: { start: { x: 0, y: 0.35 }, end: { x: 1, y: 0.65 } },
+    },
   },
 
   /** Light under a door: the glow compressed into a hot band at the rim. */
@@ -324,6 +373,13 @@ export function NegotiateButton({
             </Animated.View>
           </Animated.View>
         )}
+        {spec.dish && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.litLayer, litStyle]}>
+            <ConcaveDish />
+          </Animated.View>
+        )}
         {spec.mesh && <DotMesh />}
         {spec.drawIcon && <NegotiateGlyph />}
         <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
@@ -345,7 +401,7 @@ function GlowWash({
   config: NonNullable<VariantSpec['glow']>;
   lit: boolean;
 }) {
-  const { edge, color, core, squash = 1 } = config;
+  const { edge, color, core, squash = 1, spread = 1 } = config;
   const opacity = lit ? config.lit : config.rest;
   // Top/bottom washes reuse the design's ellipse, whose centre sits 79.5pt
   // past the rim it bleeds over. The left pool is its own geometry: an
@@ -356,8 +412,8 @@ function GlowWash({
       ? {
           cx: edge === 'left' ? 22 : FRAME.width / 2,
           cy: FRAME.height / 2,
-          rx: 62 * squash,
-          ry: FRAME.height * 0.85,
+          rx: 62 * squash * spread,
+          ry: FRAME.height * 0.85 * spread,
         }
       : {
           cx: GLOW_ELLIPSE.x + GLOW_ELLIPSE.width / 2,
@@ -365,7 +421,10 @@ function GlowWash({
           rx: GLOW_ELLIPSE.width / 2,
           ry: (GLOW_ELLIPSE.height / 2) * squash,
         };
-  const id = `wash-${edge}-${color.replace('#', '')}-${lit ? 'lit' : 'rest'}-${squash}`;
+  const id = `wash-${edge}-${color.replace('#', '')}-${lit ? 'lit' : 'rest'}-${squash}-${spread}`;
+  // A wide wash needs a long tail; a tight one wants the original two-step
+  // falloff. Extra stops keep the ramp smooth all the way to zero.
+  const softTail = spread > 1;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
@@ -375,11 +434,20 @@ function GlowWash({
               rejects it ("Invalid prop `parent` supplied to React.Fragment"). */}
           <RadialGradient id={id} cx="50%" cy="50%" rx="50%" ry="50%">
             {(core
-              ? [
-                  <Stop key="s0" offset="0" stopColor={core} stopOpacity={opacity} />,
-                  <Stop key="s1" offset="0.3" stopColor={color} stopOpacity={opacity} />,
-                  <Stop key="s2" offset="0.65" stopColor={color} stopOpacity={opacity * 0.45} />,
-                ]
+              ? softTail
+                ? [
+                    <Stop key="s0" offset="0" stopColor={core} stopOpacity={opacity} />,
+                    <Stop key="s1" offset="0.18" stopColor={core} stopOpacity={opacity * 0.85} />,
+                    <Stop key="s2" offset="0.34" stopColor={color} stopOpacity={opacity * 0.6} />,
+                    <Stop key="s3" offset="0.5" stopColor={color} stopOpacity={opacity * 0.36} />,
+                    <Stop key="s4" offset="0.68" stopColor={color} stopOpacity={opacity * 0.18} />,
+                    <Stop key="s5" offset="0.85" stopColor={color} stopOpacity={opacity * 0.06} />,
+                  ]
+                : [
+                    <Stop key="s0" offset="0" stopColor={core} stopOpacity={opacity} />,
+                    <Stop key="s1" offset="0.3" stopColor={color} stopOpacity={opacity} />,
+                    <Stop key="s2" offset="0.65" stopColor={color} stopOpacity={opacity * 0.45} />,
+                  ]
               : [
                   <Stop key="s0" offset="0" stopColor={color} stopOpacity={opacity} />,
                   <Stop key="s1" offset="0.6" stopColor={color} stopOpacity={opacity * 0.4} />,
@@ -476,6 +544,49 @@ function GradientBorderRing() {
           stroke="url(#borderRing)"
           strokeWidth={1.5}
           fill="none"
+        />
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * The dished face of node 51:92, pressed state. A 260x56 rect inset 6pt from
+ * the pill, filled with a radial whose centre sits on its TOP edge (130, 0)
+ * and whose radii — decoded from the baked gradientTransform — are rx 168.8,
+ * ry 70.5. Dark centre to bright rim is what sells the concavity.
+ *
+ * The design also layer-blurs this 1px; RN has no cheap view blur and at 1px
+ * the difference is imperceptible, so the stops carry the softness instead.
+ */
+function ConcaveDish() {
+  const inset = { x: 6, y: 6 };
+  const w = FRAME.width - inset.x * 2;
+  const h = FRAME.height - inset.y * 2;
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <RadialGradient
+            id="concaveDish"
+            gradientUnits="userSpaceOnUse"
+            cx={inset.x + w / 2}
+            cy={inset.y}
+            rx={168.79}
+            ry={70.5}>
+            <Stop offset="0" stopColor="#181140" />
+            <Stop offset="0.25" stopColor="#22185A" />
+            <Stop offset="0.5" stopColor="#2B1F73" />
+            <Stop offset="1" stopColor="#3E2CA6" />
+          </RadialGradient>
+        </Defs>
+        <Rect
+          x={inset.x}
+          y={inset.y}
+          width={w}
+          height={h}
+          rx={h / 2}
+          fill="url(#concaveDish)"
         />
       </Svg>
     </View>
@@ -608,7 +719,7 @@ function ButtonLabel({
       </Text>
     );
   }
-  return <GradientLabel>{children}</GradientLabel>;
+  return <GradientLabel spec={spec}>{children}</GradientLabel>;
 }
 
 /**
@@ -617,23 +728,37 @@ function ButtonLabel({
  * gradient. The hidden copy underneath keeps the mask from collapsing the
  * layout and gives assistive tech something to measure.
  */
-function GradientLabel({ children }: { children: string }) {
+function GradientLabel({
+  spec,
+  children,
+}: {
+  spec: Extract<VariantSpec['label'], { kind: 'gradient' }>;
+  children: string;
+}) {
+  // Defaults are node 31:293's: 115.7deg measured clockwise from Figma's 12
+  // o'clock, which lands just past horizontal, sweeping left-to-right and
+  // slightly downward. Variants ported from other nodes override.
+  const size = spec.fontSize ? { fontSize: spec.fontSize } : null;
+  const colors = spec.colors ?? ['#FFFFFF', theme.color.labelGradientEnd];
+  const locations = spec.locations ?? [0.2, 1];
+  const start = spec.angle?.start ?? { x: 0, y: 0.1 };
+  const end = spec.angle?.end ?? { x: 1, y: 0.9 };
   return (
     <MaskedView
       style={styles.labelMask}
       maskElement={
         <View style={styles.maskFill}>
-          <Text style={[styles.label, styles.maskText]}>{children}</Text>
+          <Text style={[styles.label, size, styles.maskText]}>{children}</Text>
         </View>
       }>
       <LinearGradient
-        // 115.7deg measured clockwise from Figma's 12 o'clock lands just past
-        // horizontal, sweeping left-to-right and slightly downward.
-        colors={['#FFFFFF', theme.color.labelGradientEnd]}
-        locations={[0.2, 1]}
-        start={{ x: 0, y: 0.1 }}
-        end={{ x: 1, y: 0.9 }}>
-        <Text style={[styles.label, styles.gradientSizer]}>{children}</Text>
+        colors={colors as readonly [string, string, ...string[]]}
+        locations={locations as readonly [number, number, ...number[]]}
+        start={start}
+        end={end}>
+        <Text style={[styles.label, size, styles.gradientSizer]}>
+          {children}
+        </Text>
       </LinearGradient>
     </MaskedView>
   );

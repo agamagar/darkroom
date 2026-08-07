@@ -21,6 +21,7 @@ export const TYPES = [
   'ember',
   'molten',
   'drawn',
+  'concave',
 ] as const;
 export type Type = (typeof TYPES)[number];
 
