@@ -1104,13 +1104,20 @@ function NeonEchoRing({
   const baseRy = (FRAME.height - inset * 2) / 2;
   const w = FRAME.width - inset * 2;
   const props = useAnimatedProps(() => {
-    const phase = (t.value + index * NEON_STAGGER) % 1;
-    const sink = Easing.in(Easing.quad)(phase);
+    // Minus, not plus: the ring at the tube (index 0) leads and the echoes
+    // follow it under — the surface swallows from the outside in.
+    const phase =
+      (((t.value - index * NEON_STAGGER) % 1) + 1) % 1;
+    // The whole collapse lives inside the first 60% of the cycle, so the
+    // motion happens while the ring can still be seen; the remaining 40% is
+    // the gap before this ring's next echo.
+    const sinkProg = Math.min(1, phase / 0.6);
+    const sink = Easing.in(Easing.quad)(sinkProg);
     const ry = baseRy * (1 - sink);
-    // Opacity outruns the collapse: gone by 55% of the cycle, squared so the
-    // drop is front-loaded — the ring dims as soon as it starts to go under,
-    // and the geometry finishes sinking already invisible.
-    const fade = Math.min(1, phase / 0.55);
+    // Opacity still outruns the height — gone at 42% while the collapse
+    // runs to 60% — but the two clocks are now proportioned so most of the
+    // sinking is visible before the light dies.
+    const fade = Math.min(1, phase / 0.42);
     return {
       y: FRAME.height / 2 - ry,
       height: ry * 2,
