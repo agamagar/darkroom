@@ -1034,11 +1034,15 @@ function NeonEchoRing({
     const phase = (t.value + index * NEON_STAGGER) % 1;
     const sink = Easing.in(Easing.quad)(phase);
     const ry = baseRy * (1 - sink);
+    // Opacity outruns the collapse: gone by 55% of the cycle, squared so the
+    // drop is front-loaded — the ring dims as soon as it starts to go under,
+    // and the geometry finishes sinking already invisible.
+    const fade = Math.min(1, phase / 0.55);
     return {
       y: FRAME.height / 2 - ry,
       height: ry * 2,
       rx: Math.min(ry, w / 2),
-      strokeOpacity: opacity * (1 - sink),
+      strokeOpacity: opacity * (1 - fade) ** 2,
     };
   });
   return (
