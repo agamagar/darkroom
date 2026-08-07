@@ -24,7 +24,10 @@ import Svg, {
   Circle,
   Defs,
   Ellipse,
+  G,
+  Line,
   LinearGradient as SvgLinearGradient,
+  Mask,
   Path,
   RadialGradient,
   Rect,
@@ -1105,7 +1108,18 @@ function ChromeSheen() {
   );
 }
 
-/** Figma-style selection chrome: dashed bounds, corner handles, a dim tag. */
+/**
+ * The pill as a technical drawing: its construction geometry, not just its
+ * selection bounds. Full cap circles (the two circles a stadium is built
+ * from), the horizontal axis, vertical axes through both cap centres, and a
+ * second outline offset up-right with cap-to-cap connectors — the extruded
+ * back face that makes it read as a 3D wireframe.
+ *
+ * Every construction line sits under a radial mask that goes to zero at the
+ * centre, so the drawing dissolves exactly where the label lives and
+ * resolves toward the rims. The selection chrome (dashed bounds, handles,
+ * dimension tag) stays unmasked — annotation, not construction.
+ */
 function BlueprintChrome() {
   const c = '#7FB8FF';
   const inset = 1.5;
@@ -1115,9 +1129,62 @@ function BlueprintChrome() {
     [inset, inset], [FRAME.width - inset, inset],
     [inset, FRAME.height - inset], [FRAME.width - inset, FRAME.height - inset],
   ];
+
+  // Front face of the wireframe, inset so the extrusion stays unclipped.
+  const f = { x: 8, y: 9, w: 250, h: 52 };
+  const fr = f.h / 2;
+  const cyF = f.y + fr;
+  const capL = f.x + fr;
+  const capR = f.x + f.w - fr;
+  // Back face: extruded up-right. 6,-5 keeps every line inside the frame.
+  const dx = 6, dy = -5;
+
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          {/* Black centre = hidden; construction resolves toward the rims. */}
+          <RadialGradient id="lineFade" cx="50%" cy="50%" rx="52%" ry="72%">
+            <Stop offset="0" stopColor="#000000" />
+            <Stop offset="0.38" stopColor="#000000" />
+            <Stop offset="0.85" stopColor="#FFFFFF" />
+            <Stop offset="1" stopColor="#FFFFFF" />
+          </RadialGradient>
+          <Mask id="fadeMask">
+            <Rect width={FRAME.width} height={FRAME.height} fill="url(#lineFade)" />
+          </Mask>
+        </Defs>
+
+        <G mask="url(#fadeMask)">
+          {/* Back face + connectors: the extrusion. */}
+          <Rect x={f.x + dx} y={f.y + dy} width={f.w} height={f.h} rx={fr}
+            fill="none" stroke={c} strokeOpacity={0.4} strokeWidth={0.8} />
+          {([[f.x, cyF], [f.x + f.w, cyF], [capL, f.y], [capR, f.y],
+             [capL, f.y + f.h], [capR, f.y + f.h]] as [number, number][]).map(
+            ([px, py]) => (
+              <Line key={`${px}-${py}`} x1={px} y1={py} x2={px + dx} y2={py + dy}
+                stroke={c} strokeOpacity={0.4} strokeWidth={0.8} />
+            ),
+          )}
+
+          {/* Front face. */}
+          <Rect x={f.x} y={f.y} width={f.w} height={f.h} rx={fr} fill="none"
+            stroke={c} strokeOpacity={0.75} strokeWidth={1} />
+
+          {/* The stadium's construction: full cap circles + axes. */}
+          <Circle cx={capL} cy={cyF} r={fr} fill="none" stroke={c}
+            strokeOpacity={0.55} strokeWidth={0.8} strokeDasharray="3 3" />
+          <Circle cx={capR} cy={cyF} r={fr} fill="none" stroke={c}
+            strokeOpacity={0.55} strokeWidth={0.8} strokeDasharray="3 3" />
+          <Line x1={0} y1={cyF} x2={FRAME.width} y2={cyF} stroke={c}
+            strokeOpacity={0.5} strokeWidth={0.8} strokeDasharray="8 4" />
+          <Line x1={capL} y1={0} x2={capL} y2={FRAME.height} stroke={c}
+            strokeOpacity={0.5} strokeWidth={0.8} strokeDasharray="8 4" />
+          <Line x1={capR} y1={0} x2={capR} y2={FRAME.height} stroke={c}
+            strokeOpacity={0.5} strokeWidth={0.8} strokeDasharray="8 4" />
+        </G>
+
+        {/* Selection chrome — annotation, unmasked. */}
         <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
           stroke={c} strokeOpacity={0.8} strokeWidth={1} strokeDasharray="6 4" />
         {handles.map(([hx, hy]) => (
