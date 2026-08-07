@@ -254,7 +254,11 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       fontSize: 14,
       colors: ['#FFFFFF', '#FFFFFF', '#DBDBDB', '#FFFFFF'],
       locations: [0.479, 0.623, 0.662, 0.698],
-      angle: { start: { x: 0, y: 0.35 }, end: { x: 1, y: 0.65 } },
+      // CSS 114.612deg -> pixel direction (0.909, 0.416). Converted to
+      // normalised box coords for the label's own ~105x17 box, with CSS's
+      // gradient-line length rule (|W sin| + |H cos| = 102.5, centred), the
+      // axis runs off the box top and bottom - hence the out-of-range y.
+      angle: { start: { x: 0.056, y: -0.753 }, end: { x: 0.944, y: 1.753 } },
     },
   },
 
