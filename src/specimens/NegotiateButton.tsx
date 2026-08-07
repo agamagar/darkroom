@@ -377,9 +377,11 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   },
 
   /**
-   * A copy of `drawn`, opened for divergence — same violet radial base,
+   * drawn's body with concave's press: at rest the violet radial base,
    * bottom glow, bottom-right inset throw, gradient stroke and self-drawing
-   * glyph. Fork it freely; `drawn` stays the faithful port of 48:12304.
+   * glyph — but pressing HOLLOWS it. The dish fades in and the glow holds
+   * flat (lit = rest) so the press reads as concave's push-in, not drawn's
+   * brightening. First deliberate cross-breed on the wheel.
    */
   material: {
     pill: {
@@ -390,7 +392,8 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     violetBase: true,
     drawIcon: true,
     gradientBorder: true,
-    glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.9 },
+    dish: true,
+    glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.5 },
     label: { kind: 'gradient' },
   },
 
