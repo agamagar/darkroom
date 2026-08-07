@@ -16,7 +16,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, RadialGradient, Stop } from 'react-native-svg';
 
 import { theme } from '../theme';
 
@@ -54,7 +54,8 @@ export type NegotiateButtonVariant =
   | 'ghost'
   | 'beacon'
   | 'eclipse'
-  | 'ember';
+  | 'ember'
+  | 'molten';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -65,16 +66,20 @@ type VariantSpec = {
   /** Container overrides applied on top of the shared pill geometry. */
   pill: ViewStyle;
   /**
-   * The ellipse wash. `edge` picks which rim it hugs; rest/lit are its
-   * opacity asleep and pressed. `squash` < 1 flattens it into a band.
+   * The ellipse wash. `edge` picks which rim it hugs — `left` pools it in
+   * the cap like liquid; rest/lit are its opacity asleep and pressed.
+   * `squash` < 1 flattens it into a band. `core` adds a hot centre stop.
    */
   glow?: {
-    edge: 'top' | 'bottom';
+    edge: 'top' | 'bottom' | 'left';
     color: string;
     rest: number;
     lit: number;
     squash?: number;
+    core?: string;
   };
+  /** A halftone dot mesh over the fill, as on liquid-UI surfaces. */
+  mesh?: boolean;
   /** Label treatment. Gradient is the design's masked fill. */
   label: { kind: 'gradient' } | { kind: 'solid'; color: string };
 };
@@ -136,6 +141,30 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     },
     glow: { edge: 'top', color: theme.color.glow, rest: 0.45, lit: 0.9 },
     label: { kind: 'gradient' },
+  },
+
+  /**
+   * After Jakub Wuzik's "Recharge." liquid UI: molten liquid pooled in the
+   * left cap of a dark meshed pill, white-hot at the core, bloom bleeding
+   * past the rim. Pressing stokes the coal. The one variant that leaves the
+   * indigo palette — the reference's identity IS the heat.
+   */
+  molten: {
+    pill: {
+      backgroundColor: '#161114',
+      borderColor: 'rgba(255, 255, 255, 0.06)',
+      boxShadow:
+        'inset 18px 0px 44px 0px rgba(255, 61, 0, 0.55), 0px 4px 32px 0px rgba(255, 45, 0, 0.28)',
+    },
+    glow: {
+      edge: 'left',
+      color: '#FF3D00',
+      core: '#FF8A3C',
+      rest: 0.9,
+      lit: 1,
+    },
+    mesh: true,
+    label: { kind: 'solid', color: '#F5F0EC' },
   },
 
   /** Light under a door: the glow compressed into a hot band at the rim. */
@@ -222,6 +251,7 @@ export function NegotiateButton({
         {spec.glow && spec.glow.rest > 0 && (
           <GlowWash config={spec.glow} lit={false} />
         )}
+        {spec.mesh && <DotMesh />}
         {/*
           The lit layer is the glow again at full strength, faded in on press.
           Stacking rather than swapping means the two states share their
@@ -253,30 +283,78 @@ function GlowWash({
   config: NonNullable<VariantSpec['glow']>;
   lit: boolean;
 }) {
-  const { edge, color, squash = 1 } = config;
+  const { edge, color, core, squash = 1 } = config;
   const opacity = lit ? config.lit : config.rest;
-  // The design's ellipse centre sits 79.5pt from the edge it bleeds past;
-  // mirror that distance for top-lit variants.
+  // Top/bottom washes reuse the design's ellipse, whose centre sits 79.5pt
+  // past the rim it bleeds over. The left pool is its own geometry: an
+  // ellipse centred in the cap, tall as the pill, falling off rightward.
   const cyBottom = GLOW_ELLIPSE.y + GLOW_ELLIPSE.height / 2;
-  const cy = edge === 'bottom' ? cyBottom : FRAME.height - cyBottom;
+  const geom =
+    edge === 'left'
+      ? { cx: 22, cy: FRAME.height / 2, rx: 95 * squash, ry: FRAME.height * 0.85 }
+      : {
+          cx: GLOW_ELLIPSE.x + GLOW_ELLIPSE.width / 2,
+          cy: edge === 'bottom' ? cyBottom : FRAME.height - cyBottom,
+          rx: GLOW_ELLIPSE.width / 2,
+          ry: (GLOW_ELLIPSE.height / 2) * squash,
+        };
   const id = `wash-${edge}-${color.replace('#', '')}-${lit ? 'lit' : 'rest'}-${squash}`;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <RadialGradient id={id} cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0" stopColor={color} stopOpacity={opacity} />
-            <Stop offset="0.6" stopColor={color} stopOpacity={opacity * 0.4} />
+            {core ? (
+              <>
+                <Stop offset="0" stopColor={core} stopOpacity={opacity} />
+                <Stop offset="0.3" stopColor={color} stopOpacity={opacity} />
+                <Stop
+                  offset="0.65"
+                  stopColor={color}
+                  stopOpacity={opacity * 0.45}
+                />
+              </>
+            ) : (
+              <>
+                <Stop offset="0" stopColor={color} stopOpacity={opacity} />
+                <Stop
+                  offset="0.6"
+                  stopColor={color}
+                  stopOpacity={opacity * 0.4}
+                />
+              </>
+            )}
             <Stop offset="1" stopColor={color} stopOpacity={0} />
           </RadialGradient>
         </Defs>
-        <Ellipse
-          cx={GLOW_ELLIPSE.x + GLOW_ELLIPSE.width / 2}
-          cy={cy}
-          rx={GLOW_ELLIPSE.width / 2}
-          ry={(GLOW_ELLIPSE.height / 2) * squash}
-          fill={`url(#${id})`}
-        />
+        <Ellipse cx={geom.cx} cy={geom.cy} rx={geom.rx} ry={geom.ry} fill={`url(#${id})`} />
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * The liquid-UI halftone: a quiet dot grid over the pill, as on the
+ * reference's meshed body. Faint on purpose — texture, not pattern.
+ */
+function DotMesh() {
+  const dots: React.ReactNode[] = [];
+  const step = 7;
+  for (let x = step / 2; x < FRAME.width; x += step) {
+    for (let y = step / 2; y < FRAME.height; y += step) {
+      dots.push(
+        <Circle key={`${x}-${y}`} cx={x} cy={y} r={0.7} fill="#FFFFFF" />,
+      );
+    }
+  }
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg
+        width={FRAME.width}
+        height={FRAME.height}
+        style={styles.glowSvg}
+        opacity={0.05}>
+        {dots}
       </Svg>
     </View>
   );

@@ -19,6 +19,7 @@ export const TYPES = [
   'beacon',
   'eclipse',
   'ember',
+  'molten',
 ] as const;
 export type Type = (typeof TYPES)[number];
 
