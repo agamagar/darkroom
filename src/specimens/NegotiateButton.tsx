@@ -566,6 +566,13 @@ export function NegotiateButton({
         accessibilityLabel={label}
         accessibilityState={{ disabled }}
         disabled={disabled}
+        // The hold is sacred, bench-wide: once a finger is down the pressed
+        // state persists until it LIFTS. Without a generous retention zone,
+        // Pressable fires onPressOut as soon as the finger drifts a few
+        // points mid-hold — which read as the state randomly reverting
+        // under a held finger. 120pt of drift is a deliberate slide-away.
+        pressRetentionOffset={{ top: 120, left: 120, right: 120, bottom: 120 }}
+        delayLongPress={1000000}
         onPress={onPress}
         onPressIn={() => {
           if (forcePressed) return;
