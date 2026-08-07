@@ -35,6 +35,7 @@ const DISMISS_FRACTION = 0.33;
 export function BenchSheet({
   visible,
   progress,
+  floaterHidden = false,
   onOpen,
   onClose,
   children,
@@ -42,6 +43,8 @@ export function BenchSheet({
   visible: boolean;
   /** Owned by the caller so the stage can animate off the same value. */
   progress: SharedValue<number>;
+  /** Tucks the floater away entirely (two-finger hold toggles it). */
+  floaterHidden?: boolean;
   onOpen: () => void;
   onClose: () => void;
   children: React.ReactNode;
@@ -49,6 +52,12 @@ export function BenchSheet({
   const { height: screenHeight } = useWindowDimensions();
   /** Extra translate while the finger drags the sheet down. */
   const drag = useSharedValue(0);
+  /** 1 = floater tucked away. Animated so the toggle fades, not pops. */
+  const hidden = useSharedValue(floaterHidden ? 1 : 0);
+
+  useEffect(() => {
+    hidden.value = withTiming(floaterHidden ? 1 : 0, { duration: 180 });
+  }, [floaterHidden, hidden]);
 
   // Parent state is the source of truth; the shared value follows it. (An
   // effect, not a render-time write — writing shared values during render
@@ -97,8 +106,14 @@ export function BenchSheet({
   }));
 
   const floaterStyle = useAnimatedStyle(() => ({
-    opacity: 1 - progress.value,
-    transform: [{ scale: interpolate(progress.value, [0, 1], [1, 0.8]) }],
+    opacity: (1 - progress.value) * (1 - hidden.value),
+    transform: [
+      {
+        scale:
+          interpolate(progress.value, [0, 1], [1, 0.8]) *
+          interpolate(hidden.value, [0, 1], [1, 0.85]),
+      },
+    ],
   }));
 
   return (
@@ -107,7 +122,7 @@ export function BenchSheet({
           rises since the sheet replaces it. */}
       <Animated.View
         style={[styles.floaterWrap, floaterStyle]}
-        pointerEvents={visible ? 'none' : 'auto'}>
+        pointerEvents={visible || floaterHidden ? 'none' : 'auto'}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open variant controls"

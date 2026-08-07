@@ -1,8 +1,13 @@
+import * as Haptics from 'expo-haptics';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -29,7 +34,21 @@ import { theme } from './src/theme';
 export default function App() {
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [floaterHidden, setFloaterHidden] = useState(false);
   const { width, height } = useWindowDimensions();
+
+  // Two-finger tap-and-hold anywhere on the stage tucks the floater away
+  // (and brings it back) — for clean screenshots of a screen without the
+  // bench chrome in the corner. Two fingers so it can never collide with
+  // pressing a specimen.
+  const toggleFloater = Gesture.LongPress()
+    .minPointers(2)
+    .minDuration(350)
+    .onStart(() => {
+      setFloaterHidden((h) => !h);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    })
+    .runOnJS(true);
 
   // Block first paint until the design's families are in — a flash of the
   // system font on a fidelity bench defeats the bench.
@@ -72,7 +91,8 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
-      <Animated.View style={[styles.stage, stageStyle]}>
+      <GestureDetector gesture={toggleFloater}>
+        <Animated.View style={[styles.stage, stageStyle]}>
         {selection.screen === 'negotiate' ? (
           <View
             style={{
@@ -98,11 +118,13 @@ export default function App() {
             {specimen}
           </>
         )}
-      </Animated.View>
+        </Animated.View>
+      </GestureDetector>
 
       <BenchSheet
         visible={sheetOpen}
         progress={sheetProgress}
+        floaterHidden={floaterHidden}
         onOpen={() => setSheetOpen(true)}
         onClose={() => setSheetOpen(false)}>
         <VariantPicker
