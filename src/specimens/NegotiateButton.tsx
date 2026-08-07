@@ -99,9 +99,8 @@ type VariantSpec = {
   /** The self-drawing negotiate glyph beside the label (2s loop). */
   drawIcon?: boolean;
   /**
-   * Node 48:12304's stroke is a gradient, not a flat colour — near-invisible
-   * at the top, violet at the caps and bottom (sampled from the render:
-   * top-mid rgb(8,2,19) vs cap-mid rgb(94,57,178)). RN cannot gradient a
+   * Node 48:12304's stroke is white with a HORIZONTAL alpha ramp — a rim
+   * light on the caps, gone across the middle. RN cannot gradient a
    * borderColor, so this draws the ring as an SVG stroke.
    */
   gradientBorder?: boolean;
@@ -429,20 +428,43 @@ function VioletBase() {
 }
 
 /**
- * The gradient stroke of node 48:12304, drawn as an SVG ring. Stops fitted
- * to the sampled render: gone at the top, waking through violet mid-height,
- * full at the bottom rim.
+ * The stroke of node 48:12304, drawn as an SVG ring.
+ *
+ * Measured off the render rather than trusting codegen (which reported a
+ * flat rgba(255,255,255,0.45)). The paint IS white — but its alpha ramps
+ * HORIZONTALLY: ~0.45 at the caps, ~0.02 across the middle, symmetric. It
+ * reads as a rim light on the two ends, invisible along the top and bottom
+ * runs. Alpha solved per sample from observed = a*255 + (1-a)*fill:
+ *   x/w 0.17 -> 0.41 | 0.26 -> 0.34 | 0.36 -> 0.23 | 0.45 -> 0.07
+ *   0.50 -> 0.02 | 0.64 -> 0.20 | 0.74 -> 0.33 | 0.83 -> 0.42
  */
+const BORDER_ALPHA_STOPS: [number, number][] = [
+  [0, 0.45],
+  [0.17, 0.41],
+  [0.3, 0.3],
+  [0.42, 0.12],
+  [0.5, 0.02],
+  [0.58, 0.12],
+  [0.7, 0.3],
+  [0.83, 0.42],
+  [1, 0.45],
+];
+
 function GradientBorderRing() {
   const inset = 0.75; // centre a 1.5pt stroke on the frame edge
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
-          <SvgLinearGradient id="borderRing" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.05} />
-            <Stop offset="0.5" stopColor="#8B7CF6" stopOpacity={0.4} />
-            <Stop offset="1" stopColor="#975AFF" stopOpacity={0.95} />
+          <SvgLinearGradient id="borderRing" x1="0" y1="0" x2="1" y2="0">
+            {BORDER_ALPHA_STOPS.map(([offset, alpha]) => (
+              <Stop
+                key={offset}
+                offset={offset}
+                stopColor="#FFFFFF"
+                stopOpacity={alpha}
+              />
+            ))}
           </SvgLinearGradient>
         </Defs>
         <Rect
