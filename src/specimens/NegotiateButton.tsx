@@ -1002,6 +1002,11 @@ const PHI = 1.618;
  * at its own edge and outward echoes would never be seen. Brightness and
  * weight fall with each step, so it reads as the tube ringing, not five
  * tubes.
+ *
+ * While held they SINK: each ring's height and opacity run to zero on a
+ * staggered loop — width stays, the stadium flattens to a line on the axis
+ * and vanishes, like the surface swallowing the echo. Ease-in, because
+ * things accelerate as they go under.
  */
 const NEON_ECHOES = Array.from({ length: 5 }, (_, i) => ({
   inset: i === 0 ? 2 : 2 + 3.2 * ((PHI ** i - 1) / (PHI - 1)),
@@ -1009,11 +1014,63 @@ const NEON_ECHOES = Array.from({ length: 5 }, (_, i) => ({
   width: [1.6, 1.4, 1.2, 1.1, 1][i],
 }));
 
+const NEON_SINK_MS = 1400;
+/** Phase offset between neighbouring rings — outer sinks first. */
+const NEON_STAGGER = 0.16;
+
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
+
+function NeonEchoRing({
+  index,
+  t,
+}: {
+  index: number;
+  t: SharedValue<number>;
+}) {
+  const { inset, opacity, width } = NEON_ECHOES[index];
+  const baseRy = (FRAME.height - inset * 2) / 2;
+  const w = FRAME.width - inset * 2;
+  const props = useAnimatedProps(() => {
+    const phase = (t.value + index * NEON_STAGGER) % 1;
+    const sink = Easing.in(Easing.quad)(phase);
+    const ry = baseRy * (1 - sink);
+    return {
+      y: FRAME.height / 2 - ry,
+      height: ry * 2,
+      rx: Math.min(ry, w / 2),
+      strokeOpacity: opacity * (1 - sink),
+    };
+  });
+  return (
+    <AnimatedRect
+      x={inset}
+      width={w}
+      fill="none"
+      stroke={index === 0 ? '#FFFFFF' : '#D8CFFF'}
+      strokeWidth={width}
+      animatedProps={props}
+    />
+  );
+}
+
 /** The neon tube: a bright ring hugging the rim, haloed inward and out. */
 function NeonRing({ lit }: { lit: boolean }) {
   const inset = 2;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
+  const reducedMotion = useReducedMotion();
+  // One clock drives all five rings; their stagger comes from phase offsets.
+  // Runs only on the lit copy, whose visibility the press already gates.
+  // Reduce Motion pins it: rings hold at their golden-ratio homes, still.
+  const sinkT = useSharedValue(0);
+  useEffect(() => {
+    if (!lit || reducedMotion) return;
+    sinkT.value = 0;
+    sinkT.value = withRepeat(
+      withTiming(1, { duration: NEON_SINK_MS, easing: Easing.linear }),
+      -1,
+    );
+  }, [lit, reducedMotion, sinkT]);
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
@@ -1024,19 +1081,8 @@ function NeonRing({ lit }: { lit: boolean }) {
         <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
           stroke={theme.color.indigo400} strokeOpacity={lit ? 0.85 : 0.5} strokeWidth={4.5} />
         {lit ? (
-          NEON_ECHOES.map(({ inset: ei, opacity, width }, i) => (
-            <Rect
-              key={ei}
-              x={ei}
-              y={ei}
-              width={FRAME.width - ei * 2}
-              height={FRAME.height - ei * 2}
-              rx={(FRAME.height - ei * 2) / 2}
-              fill="none"
-              stroke={i === 0 ? '#FFFFFF' : '#D8CFFF'}
-              strokeOpacity={opacity}
-              strokeWidth={width}
-            />
+          NEON_ECHOES.map((_, i) => (
+            <NeonEchoRing key={i} index={i} t={sinkT} />
           ))
         ) : (
           <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
