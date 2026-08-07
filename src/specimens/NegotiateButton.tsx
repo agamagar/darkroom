@@ -7,6 +7,7 @@ import {
   Text,
   View,
   type StyleProp,
+  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import Animated, {
@@ -22,7 +23,7 @@ import { theme } from '../theme';
 /**
  * Figma: Away Working File, node 31:293 ("Negotiate flight").
  *
- * Three effects stack to make the look, from back to front:
+ * The ported `gradient` variant stacks three effects, back to front:
  *   1. a flat `primary/950` fill,
  *   2. a wide ellipse bleeding off the bottom edge, clipped by the pill,
  *   3. an inset box-shadow throwing purple up from the bottom.
@@ -32,10 +33,10 @@ import { theme } from '../theme';
  * position and size the design gives it (240x77 at x=20.6, y=41.2 in a
  * 272x68 frame).
  *
- * The pressed state is NOT in the design — node 31:293 is a plain frame with
- * no variants, so there was nothing to port. It is designed here to match the
- * component's own language: pressing lights the pill up, driving the glow that
- * already defines it rather than adding a new effect on top.
+ * The pressed state and the non-gradient variants are NOT in the design —
+ * node 31:293 is a plain frame with no variants. They are designed here in
+ * the component's own language: light from somewhere. Pressing always means
+ * more light; each variant just keeps its light in a different place.
  */
 
 const FRAME = { width: 272, height: 68 } as const;
@@ -47,8 +48,116 @@ const PRESSED_SCALE = 0.97;
 const PRESS_IN_MS = 90;
 const PRESS_OUT_MS = 260;
 
+export type NegotiateButtonVariant =
+  | 'gradient'
+  | 'outline'
+  | 'ghost'
+  | 'beacon'
+  | 'eclipse'
+  | 'ember';
+
+/**
+ * Everything that differs between variants, as data. A variant is a row here,
+ * never a fork in the render tree — that keeps press/disabled/a11y behaviour
+ * identical across all six.
+ */
+type VariantSpec = {
+  /** Container overrides applied on top of the shared pill geometry. */
+  pill: ViewStyle;
+  /**
+   * The ellipse wash. `edge` picks which rim it hugs; rest/lit are its
+   * opacity asleep and pressed. `squash` < 1 flattens it into a band.
+   */
+  glow?: {
+    edge: 'top' | 'bottom';
+    color: string;
+    rest: number;
+    lit: number;
+    squash?: number;
+  };
+  /** Label treatment. Gradient is the design's masked fill. */
+  label: { kind: 'gradient' } | { kind: 'solid'; color: string };
+};
+
+const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
+  /** The port of node 31:293, untouched. */
+  gradient: {
+    pill: {
+      backgroundColor: theme.color.primary950,
+      boxShadow: `inset 0px -16px 40px 0px ${theme.color.glow}`,
+    },
+    glow: { edge: 'bottom', color: theme.color.glow, rest: 0.55, lit: 0.95 },
+    label: { kind: 'gradient' },
+  },
+
+  /** The quiet sibling: just a border until pressed, then the glow wakes. */
+  outline: {
+    pill: {
+      backgroundColor: 'transparent',
+      borderColor: 'rgba(139, 124, 246, 0.45)',
+    },
+    glow: { edge: 'bottom', color: theme.color.glow, rest: 0, lit: 0.6 },
+    label: { kind: 'gradient' },
+  },
+
+  /** No container at all — the label carries it; press lights a halo. */
+  ghost: {
+    pill: {
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+    },
+    glow: {
+      edge: 'bottom',
+      color: theme.color.glow,
+      rest: 0,
+      lit: 0.4,
+      squash: 0.7,
+    },
+    label: { kind: 'gradient' },
+  },
+
+  /** Inverted: solid indigo, dark label, light thrown OUTWARD not held in. */
+  beacon: {
+    pill: {
+      backgroundColor: theme.color.indigo500,
+      borderColor: 'rgba(255, 255, 255, 0.18)',
+      boxShadow: `0px 10px 44px 0px rgba(109, 92, 240, 0.55)`,
+    },
+    // Pressing floods the face with the lighter indigo from below.
+    glow: { edge: 'bottom', color: theme.color.indigo400, rest: 0.35, lit: 0.9 },
+    label: { kind: 'solid', color: theme.color.primary950 },
+  },
+
+  /** The gradient flipped: lit from above, bottom in shadow. The dark room. */
+  eclipse: {
+    pill: {
+      backgroundColor: theme.color.primary950,
+      boxShadow: `inset 0px 16px 40px 0px ${theme.color.glow}`,
+    },
+    glow: { edge: 'top', color: theme.color.glow, rest: 0.45, lit: 0.9 },
+    label: { kind: 'gradient' },
+  },
+
+  /** Light under a door: the glow compressed into a hot band at the rim. */
+  ember: {
+    pill: {
+      backgroundColor: theme.color.primary950,
+      boxShadow: `inset 0px -10px 18px 0px ${theme.color.glow}`,
+    },
+    glow: {
+      edge: 'bottom',
+      color: theme.color.indigo400,
+      rest: 0.7,
+      lit: 1,
+      squash: 0.45,
+    },
+    label: { kind: 'gradient' },
+  },
+};
+
 export type NegotiateButtonProps = {
   label?: string;
+  variant?: NegotiateButtonVariant;
   onPress?: () => void;
   disabled?: boolean;
   /** Fires a light impact on press-down. */
@@ -64,12 +173,15 @@ export type NegotiateButtonProps = {
 
 export function NegotiateButton({
   label = 'Negotiate flight',
+  variant = 'gradient',
   onPress,
   disabled = false,
   haptics = true,
   forcePressed = false,
   style,
 }: NegotiateButtonProps) {
+  const spec = VARIANTS[variant];
+
   // 0 = at rest, 1 = held down. One value drives both the scale and the glow
   // so they can never disagree about the button's state.
   const press = useSharedValue(forcePressed ? 1 : 0);
@@ -106,60 +218,85 @@ export function NegotiateButton({
           if (forcePressed) return;
           press.value = withTiming(0, { duration: PRESS_OUT_MS });
         }}
-        style={[styles.pill, disabled && styles.pillDisabled]}>
-        <BottomGlow />
+        style={[styles.pill, spec.pill, disabled && styles.pillDisabled]}>
+        {spec.glow && spec.glow.rest > 0 && (
+          <GlowWash config={spec.glow} lit={false} />
+        )}
         {/*
-          The lit layer is the resting glow again at full strength, faded in on
-          press. Stacking rather than swapping means the two states share their
+          The lit layer is the glow again at full strength, faded in on press.
+          Stacking rather than swapping means the two states share their
           geometry exactly, so nothing shifts as it brightens.
         */}
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.litLayer, litStyle]}
-          needsOffscreenAlphaCompositing>
-          <BottomGlow lit />
-        </Animated.View>
-        <GradientLabel>{label}</GradientLabel>
+        {spec.glow && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.litLayer, litStyle]}
+            needsOffscreenAlphaCompositing>
+            <GlowWash config={spec.glow} lit />
+          </Animated.View>
+        )}
+        <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
       </Pressable>
     </Animated.View>
   );
 }
 
 /**
- * The soft wash rising off the bottom edge. Rendered at the frame's intrinsic
- * size and absolutely positioned so it keeps its shape regardless of how wide
- * the pill stretches; the pill's `overflow: hidden` does the clipping.
+ * The soft wash hugging one rim. Rendered at the frame's intrinsic size and
+ * absolutely positioned so it keeps its shape regardless of how wide the pill
+ * stretches; the pill's `overflow: hidden` does the clipping.
  */
-function BottomGlow({ lit = false }: { lit?: boolean }) {
-  const id = lit ? 'negotiateGlowLit' : 'negotiateGlow';
+function GlowWash({
+  config,
+  lit,
+}: {
+  config: NonNullable<VariantSpec['glow']>;
+  lit: boolean;
+}) {
+  const { edge, color, squash = 1 } = config;
+  const opacity = lit ? config.lit : config.rest;
+  // The design's ellipse centre sits 79.5pt from the edge it bleeds past;
+  // mirror that distance for top-lit variants.
+  const cyBottom = GLOW_ELLIPSE.y + GLOW_ELLIPSE.height / 2;
+  const cy = edge === 'bottom' ? cyBottom : FRAME.height - cyBottom;
+  const id = `wash-${edge}-${color.replace('#', '')}-${lit ? 'lit' : 'rest'}-${squash}`;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <RadialGradient id={id} cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop
-              offset="0"
-              stopColor={theme.color.glow}
-              stopOpacity={lit ? 0.95 : 0.55}
-            />
-            <Stop
-              offset="0.6"
-              stopColor={theme.color.glow}
-              stopOpacity={lit ? 0.5 : 0.22}
-            />
-            <Stop offset="1" stopColor={theme.color.glow} stopOpacity={0} />
+            <Stop offset="0" stopColor={color} stopOpacity={opacity} />
+            <Stop offset="0.6" stopColor={color} stopOpacity={opacity * 0.4} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Ellipse
           cx={GLOW_ELLIPSE.x + GLOW_ELLIPSE.width / 2}
-          cy={GLOW_ELLIPSE.y + GLOW_ELLIPSE.height / 2}
+          cy={cy}
           rx={GLOW_ELLIPSE.width / 2}
-          ry={GLOW_ELLIPSE.height / 2}
+          ry={(GLOW_ELLIPSE.height / 2) * squash}
           fill={`url(#${id})`}
         />
       </Svg>
     </View>
   );
+}
+
+function ButtonLabel({
+  spec,
+  children,
+}: {
+  spec: VariantSpec['label'];
+  children: string;
+}) {
+  if (spec.kind === 'solid') {
+    return (
+      <Text style={[styles.label, { color: spec.color, fontWeight: '500' }]}>
+        {children}
+      </Text>
+    );
+  }
+  return <GradientLabel>{children}</GradientLabel>;
 }
 
 /**
@@ -207,11 +344,9 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     borderWidth: 2,
     borderColor: theme.color.hairline,
-    backgroundColor: theme.color.primary950,
     overflow: 'hidden',
-    // Figma: inset 0 -16px 40px #6d5cf0. Inset shadows need the New
-    // Architecture, which Expo SDK 57 / RN 0.86 enables by default.
-    boxShadow: `inset 0px -16px 40px 0px ${theme.color.glow}`,
+    // Inset shadows (used by several variants) need the New Architecture,
+    // which Expo SDK 57 / RN 0.86 enables by default.
   },
   pillDisabled: {
     opacity: 0.5,
@@ -229,12 +364,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
   },
   glowSvg: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
+    left: 0,
   },
   labelMask: {
     flexShrink: 1,

@@ -31,7 +31,7 @@ export default function App() {
           <NegotiateButton
             // Remounts on state change so a specimen that pins its press
             // value at mount picks the new one up.
-            key={selection.state}
+            key={`${selection.state}-${selection.type}`}
             onPress={() => {}}
             {...propsFor(selection)}
           />

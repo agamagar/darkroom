@@ -12,7 +12,14 @@ import type { NegotiateButtonProps } from '../specimens/NegotiateButton';
 export const STATES = ['default', 'pressed', 'inactive'] as const;
 export type State = (typeof STATES)[number];
 
-export const TYPES = ['gradient'] as const;
+export const TYPES = [
+  'gradient',
+  'outline',
+  'ghost',
+  'beacon',
+  'eclipse',
+  'ember',
+] as const;
 export type Type = (typeof TYPES)[number];
 
 export type Selection = {
@@ -30,8 +37,9 @@ export const INITIAL_SELECTION: Selection = {
  * place means the specimen never learns about the bench — it keeps a plain
  * props API, and the bench does the adapting.
  */
-export function propsFor({ state }: Selection): Partial<NegotiateButtonProps> {
+export function propsFor({ state, type }: Selection): Partial<NegotiateButtonProps> {
   return {
+    variant: type,
     forcePressed: state === 'pressed',
     disabled: state === 'inactive',
   };
