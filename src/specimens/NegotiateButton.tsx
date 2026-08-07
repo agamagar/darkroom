@@ -1112,13 +1112,14 @@ function ChromeSheen() {
 }
 
 /**
- * The pill as a technical drawing: its construction geometry, not just its
- * selection bounds. Full cap circles (the two circles a stadium is built
- * from), the horizontal axis, vertical axes through both cap centres, and a
- * second outline offset up-right with cap-to-cap connectors — the extruded
- * back face that makes it read as a 3D wireframe.
+ * The pill as a 3D capsule wireframe — a solid of revolution, not an
+ * extrusion. Cross-section rings wrap the body along its axis: full-height
+ * over the cylindrical middle, shrinking as sqrt(1 - (d/r)^2) once they
+ * enter either hemispherical cap, so both ends read as ROUND in depth. Each
+ * ring is an ellipse foreshortened to 30% of its radius, which is what a
+ * circular section looks like seen nearly edge-on.
  *
- * Every construction line sits under a radial mask that goes to zero at the
+ * Every construction line sits under a radial mask that reaches zero at the
  * centre, so the drawing dissolves exactly where the label lives and
  * resolves toward the rims. The selection chrome (dashed bounds, handles,
  * dimension tag) stays unmasked — annotation, not construction.
@@ -1133,14 +1134,31 @@ function BlueprintChrome() {
     [inset, FRAME.height - inset], [FRAME.width - inset, FRAME.height - inset],
   ];
 
-  // Front face of the wireframe, inset so the extrusion stays unclipped.
-  const f = { x: 8, y: 9, w: 250, h: 52 };
+  // The capsule being sectioned: slightly inside the rim.
+  const f = { x: 8, y: 8, w: 256, h: 54 };
   const fr = f.h / 2;
-  const cyF = f.y + fr;
+  const cy = f.y + fr;
   const capL = f.x + fr;
   const capR = f.x + f.w - fr;
-  // Back face: extruded up-right. 6,-5 keeps every line inside the frame.
-  const dx = 6, dy = -5;
+  /** How flat an edge-on circular section projects. */
+  const FORESHORTEN = 0.3;
+
+  // Body rings every ~26pt, plus a fixed cascade INSIDE each cap (at 45%,
+  // 72% and 91% of the cap depth) so the rounding is drawn, not implied —
+  // one ring per cap reads as a chamfer, three read as a sphere.
+  const ringXs: number[] = [];
+  for (let x = capL; x <= capR; x += 26) ringXs.push(x);
+  for (const t of [0.45, 0.72, 0.91]) {
+    ringXs.push(capL - fr * t);
+    ringXs.push(capR + fr * t);
+  }
+  const rings = ringXs
+    .map((x) => {
+      const d = x < capL ? capL - x : x > capR ? x - capR : 0;
+      const r = d === 0 ? fr : fr * Math.sqrt(Math.max(0, 1 - (d / fr) ** 2));
+      return { x, ry: r, rx: Math.max(2, r * FORESHORTEN) };
+    })
+    .filter((ring) => ring.ry > 5);
 
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
@@ -1159,31 +1177,18 @@ function BlueprintChrome() {
         </Defs>
 
         <G mask="url(#fadeMask)">
-          {/* Back face + connectors: the extrusion. */}
-          <Rect x={f.x + dx} y={f.y + dy} width={f.w} height={f.h} rx={fr}
-            fill="none" stroke={c} strokeOpacity={0.4} strokeWidth={0.8} />
-          {([[f.x, cyF], [f.x + f.w, cyF], [capL, f.y], [capR, f.y],
-             [capL, f.y + f.h], [capR, f.y + f.h]] as [number, number][]).map(
-            ([px, py]) => (
-              <Line key={`${px}-${py}`} x1={px} y1={py} x2={px + dx} y2={py + dy}
-                stroke={c} strokeOpacity={0.4} strokeWidth={0.8} />
-            ),
-          )}
-
-          {/* Front face. */}
+          {/* Silhouette. */}
           <Rect x={f.x} y={f.y} width={f.w} height={f.h} rx={fr} fill="none"
             stroke={c} strokeOpacity={0.75} strokeWidth={1} />
 
-          {/* The stadium's construction: full cap circles + axes. */}
-          <Circle cx={capL} cy={cyF} r={fr} fill="none" stroke={c}
-            strokeOpacity={0.55} strokeWidth={0.8} strokeDasharray="3 3" />
-          <Circle cx={capR} cy={cyF} r={fr} fill="none" stroke={c}
-            strokeOpacity={0.55} strokeWidth={0.8} strokeDasharray="3 3" />
-          <Line x1={0} y1={cyF} x2={FRAME.width} y2={cyF} stroke={c}
-            strokeOpacity={0.5} strokeWidth={0.8} strokeDasharray="8 4" />
-          <Line x1={capL} y1={0} x2={capL} y2={FRAME.height} stroke={c}
-            strokeOpacity={0.5} strokeWidth={0.8} strokeDasharray="8 4" />
-          <Line x1={capR} y1={0} x2={capR} y2={FRAME.height} stroke={c}
+          {/* Section rings — the capsule turned in depth. */}
+          {rings.map(({ x, rx, ry }) => (
+            <Ellipse key={x} cx={x} cy={cy} rx={rx} ry={ry} fill="none"
+              stroke={c} strokeOpacity={0.45} strokeWidth={0.8} />
+          ))}
+
+          {/* Axis of revolution. */}
+          <Line x1={0} y1={cy} x2={FRAME.width} y2={cy} stroke={c}
             strokeOpacity={0.5} strokeWidth={0.8} strokeDasharray="8 4" />
         </G>
 
