@@ -506,8 +506,8 @@ export function NegotiateButton({
   /**
    * The hold clock — neon's paradigm, promoted system-wide. Press-in starts
    * it from zero, it repeats for as long as the finger stays down, release
-   * cancels and rewinds. Every variant's lit layer breathes on it (a ±15%
-   * sine around 0.85), so no pressed state is ever a still image: glows
+   * cancels and rewinds. Every variant's lit layer breathes on it (a ±22%
+   * sine around 0.78), so no pressed state is ever a still image: glows
    * pulse, the dish swells, ember's band shimmers — each in its own
    * material, all from one clock. Reduce Motion pins the breath at full.
    */
@@ -531,7 +531,7 @@ export function NegotiateButton({
   const litStyle = useAnimatedStyle(() => {
     const breath = reducedMotion
       ? 1
-      : 0.85 + 0.15 * Math.sin(holdT.value * 2 * Math.PI);
+      : 0.78 + 0.22 * Math.sin(holdT.value * 2 * Math.PI);
     return { opacity: press.value * breath };
   });
   /** Inverse of litStyle — for chrome the press must REMOVE, not add. */
