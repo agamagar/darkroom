@@ -346,9 +346,9 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   chrome: {
     pill: {
-      backgroundColor: '#8E8E9A',
+      backgroundColor: '#8E82B8',
       borderColor: 'rgba(255, 255, 255, 0.35)',
-      boxShadow: '0px 6px 24px 0px rgba(0, 0, 0, 0.5)',
+      boxShadow: '0px 6px 24px 0px rgba(20, 8, 50, 0.55)',
     },
     chromeBase: true,
     label: { kind: 'solid', color: '#17131C' },
@@ -1060,18 +1060,22 @@ function CarveInset() {
   );
 }
 
-/** Banded steel: the classic four-band metal ramp, vertical. */
+/**
+ * Banded metal in the house lilac: the classic four-band ramp with every
+ * band pulled toward indigo/400's hue instead of neutral grey — polished
+ * amethyst rather than steel. Same band structure, same sheen behaviour.
+ */
 function ChromeBase() {
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="chromeBands" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#F2F2F6" />
-            <Stop offset="0.42" stopColor="#B9B9C6" />
-            <Stop offset="0.5" stopColor="#6E6E7C" />
-            <Stop offset="0.62" stopColor="#9C9CAA" />
-            <Stop offset="1" stopColor="#DCDCE4" />
+            <Stop offset="0" stopColor="#F3F0FC" />
+            <Stop offset="0.42" stopColor="#B6ABE4" />
+            <Stop offset="0.5" stopColor="#6A5E92" />
+            <Stop offset="0.62" stopColor="#9A8ECC" />
+            <Stop offset="1" stopColor="#DED7F4" />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width} height={FRAME.height} fill="url(#chromeBands)" />
