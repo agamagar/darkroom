@@ -930,13 +930,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   pill: {
+    // PINNED to the design's height, not left intrinsic.
+    //
+    // Every decorative layer — washes, violet base, dish, mesh, border ring —
+    // is drawn into a FRAME-sized SVG. While the pill sized itself to its
+    // content, those layers only matched by luck: 67pt with a 16pt label,
+    // 65 with concave's 14, and 72 once the icon slot pushed it out. Any
+    // shortfall showed as unpainted button, which is the gap you could see
+    // along the bottom edge with the icon on.
+    height: FRAME.height,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     // The design's icon-to-label gap; harmless when there is no icon.
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 24,
     borderRadius: theme.radius.lg,
     borderWidth: 2,
     borderColor: theme.color.hairline,
