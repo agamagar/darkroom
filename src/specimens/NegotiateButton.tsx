@@ -341,16 +341,24 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   carve: {
     pill: {
-      // Lilac clay rather than neutral slate: the surface itself carries
-      // the house hue, and both shadows tint with it — lilac-white raise
-      // from the upper left, deep violet fall to the lower right.
-      backgroundColor: '#453A6B',
-      borderColor: 'rgba(210, 198, 255, 0.1)',
+      // Lilac clay, lit: the surface carries the house hue and now also an
+      // ambient sheen (the centre glow below) that drifts with the gyro's
+      // focal shift — soft daylight moving over a matte object, not a lamp.
+      backgroundColor: '#4E4180',
+      borderColor: 'rgba(216, 205, 255, 0.14)',
       boxShadow:
-        '-6px -8px 18px 0px rgba(200, 186, 255, 0.16), 8px 10px 22px 0px rgba(10, 4, 28, 0.65)',
+        '-6px -8px 20px 0px rgba(206, 192, 255, 0.22), 8px 10px 24px 0px rgba(10, 4, 28, 0.65)',
+    },
+    glow: {
+      edge: 'center',
+      color: '#C4B5FD',
+      core: '#EAE2FF',
+      rest: 0.34,
+      lit: 0.5,
+      spread: 2.2,
     },
     carveInset: true,
-    label: { kind: 'solid', color: '#F1ECFF' },
+    label: { kind: 'solid', color: '#F6F2FF' },
   },
 
   /**
@@ -360,8 +368,8 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   chrome: {
     pill: {
-      backgroundColor: '#7A69C4',
-      borderColor: 'rgba(230, 220, 255, 0.4)',
+      backgroundColor: '#7450DB',
+      borderColor: 'rgba(228, 212, 255, 0.45)',
       boxShadow: '0px 6px 24px 0px rgba(20, 8, 50, 0.55)',
     },
     chromeBase: true,
@@ -1207,11 +1215,11 @@ function ChromeBase() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="chromeBands" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#CBB8FF" />
-            <Stop offset="0.42" stopColor="#8B7CF6" />
-            <Stop offset="0.5" stopColor="#453473" />
-            <Stop offset="0.62" stopColor="#7563C9" />
-            <Stop offset="1" stopColor="#B4A2F5" />
+            <Stop offset="0" stopColor="#BE9AFF" />
+            <Stop offset="0.42" stopColor="#7E52F5" />
+            <Stop offset="0.5" stopColor="#371E70" />
+            <Stop offset="0.62" stopColor="#6A44E0" />
+            <Stop offset="1" stopColor="#A87BFF" />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width} height={FRAME.height} fill="url(#chromeBands)" />
@@ -1227,11 +1235,11 @@ function ChromeSheen() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="chromeSheen" x1="0" y1="0.5" x2="1" y2="0.5">
-            <Stop offset="0" stopColor="#EAE1FF" stopOpacity={0} />
-            <Stop offset="0.42" stopColor="#EAE1FF" stopOpacity={0.06} />
-            <Stop offset="0.5" stopColor="#EAE1FF" stopOpacity={0.5} />
-            <Stop offset="0.58" stopColor="#EAE1FF" stopOpacity={0.06} />
-            <Stop offset="1" stopColor="#EAE1FF" stopOpacity={0} />
+            <Stop offset="0" stopColor="#E2CFFF" stopOpacity={0} />
+            <Stop offset="0.42" stopColor="#E2CFFF" stopOpacity={0.06} />
+            <Stop offset="0.5" stopColor="#E2CFFF" stopOpacity={0.5} />
+            <Stop offset="0.58" stopColor="#E2CFFF" stopOpacity={0.06} />
+            <Stop offset="1" stopColor="#E2CFFF" stopOpacity={0} />
           </SvgLinearGradient>
         </Defs>
         <Rect x={-40} y={-20} width={FRAME.width + 80} height={FRAME.height + 40}
@@ -1319,9 +1327,8 @@ function BlueprintChrome() {
 
         </G>
 
-        {/* Selection chrome — annotation, unmasked. */}
-        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
-          stroke={c} strokeOpacity={0.8} strokeWidth={1} strokeDasharray="6 4" />
+        {/* Corner handles — annotation, unmasked. The dashed bounds are
+            gone; the wireframe silhouette carries the shape. */}
         {handles.map(([hx, hy]) => (
           <Rect key={`${hx}-${hy}`} x={hx - 3} y={hy - 3} width={6} height={6}
             fill={theme.color.bg} stroke={c} strokeWidth={1} />
