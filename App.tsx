@@ -41,9 +41,11 @@ export default function App() {
   // (and brings it back) — for clean screenshots of a screen without the
   // bench chrome in the corner. Two fingers so it can never collide with
   // pressing a specimen.
-  const toggleFloater = Gesture.LongPress()
+  // (A Pan, not a LongPress — LongPress cannot require two pointers.)
+  const toggleFloater = Gesture.Pan()
     .minPointers(2)
-    .minDuration(350)
+    .maxPointers(2)
+    .activateAfterLongPress(350)
     .onStart(() => {
       setFloaterHidden((h) => !h);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
