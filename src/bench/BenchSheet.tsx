@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Circle, Line } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { theme } from '../theme';
 
@@ -113,7 +113,7 @@ export function BenchSheet({
           accessibilityLabel="Open variant controls"
           onPress={onOpen}
           style={styles.floater}>
-          <SlidersIcon />
+          <ChevronUpIcon />
         </Pressable>
       </Animated.View>
 
@@ -136,15 +136,18 @@ export function BenchSheet({
   );
 }
 
-/** Two slider tracks with offset knobs — the universal "tweak me" glyph. */
-function SlidersIcon() {
-  const c = theme.color.indigo400;
+/** Upward chevron — the floater raises the sheet, so the glyph points up. */
+function ChevronUpIcon() {
   return (
     <Svg width={22} height={22} viewBox="0 0 22 22">
-      <Line x1={2} y1={7} x2={20} y2={7} stroke={c} strokeWidth={1.6} strokeLinecap="round" />
-      <Circle cx={8} cy={7} r={3} fill={theme.color.primary950} stroke={c} strokeWidth={1.6} />
-      <Line x1={2} y1={15} x2={20} y2={15} stroke={c} strokeWidth={1.6} strokeLinecap="round" />
-      <Circle cx={14} cy={15} r={3} fill={theme.color.primary950} stroke={c} strokeWidth={1.6} />
+      <Path
+        d="M4.5 13.5 L11 7.5 L17.5 13.5"
+        stroke={theme.color.indigo400}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
     </Svg>
   );
 }
