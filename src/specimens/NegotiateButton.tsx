@@ -83,7 +83,7 @@ type VariantSpec = {
    * `squash` < 1 flattens it into a band. `core` adds a hot centre stop.
    */
   glow?: {
-    edge: 'top' | 'bottom' | 'left';
+    edge: 'top' | 'bottom' | 'left' | 'center';
     color: string;
     rest: number;
     lit: number;
@@ -160,22 +160,20 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   },
 
   /**
-   * After Jakub Wuzik's "Recharge." liquid UI: molten liquid pooled in the
-   * left cap of a dark meshed pill, white-hot at the core, bloom bleeding
-   * past the rim. Pressing stokes the coal. The one variant that leaves the
-   * indigo palette — the reference's identity IS the heat.
+   * After Jakub Wuzik's "Recharge." liquid UI, recoloured into the house
+   * indigo: a molten pool centred in a dark meshed pill, hot at the core,
+   * bloom bleeding past the rim. Pressing stokes it.
    */
   molten: {
     pill: {
-      backgroundColor: '#161114',
-      borderColor: 'rgba(255, 255, 255, 0.06)',
-      boxShadow:
-        'inset 12px 0px 30px 0px rgba(255, 61, 0, 0.5), 0px 4px 32px 0px rgba(255, 45, 0, 0.28)',
+      backgroundColor: theme.color.primary950,
+      borderColor: theme.color.hairline,
+      boxShadow: `inset 0px 0px 30px 0px rgba(109, 92, 240, 0.5), 0px 4px 32px 0px rgba(109, 92, 240, 0.28)`,
     },
     glow: {
-      edge: 'left',
-      color: '#FF3D00',
-      core: '#FF8A3C',
+      edge: 'center',
+      color: theme.color.glow,
+      core: theme.color.indigo400,
       rest: 0.9,
       lit: 1,
     },
@@ -328,8 +326,13 @@ function GlowWash({
   // ellipse centred in the cap, tall as the pill, falling off rightward.
   const cyBottom = GLOW_ELLIPSE.y + GLOW_ELLIPSE.height / 2;
   const geom =
-    edge === 'left'
-      ? { cx: 22, cy: FRAME.height / 2, rx: 62 * squash, ry: FRAME.height * 0.85 }
+    edge === 'left' || edge === 'center'
+      ? {
+          cx: edge === 'left' ? 22 : FRAME.width / 2,
+          cy: FRAME.height / 2,
+          rx: 62 * squash,
+          ry: FRAME.height * 0.85,
+        }
       : {
           cx: GLOW_ELLIPSE.x + GLOW_ELLIPSE.width / 2,
           cy: edge === 'bottom' ? cyBottom : FRAME.height - cyBottom,
