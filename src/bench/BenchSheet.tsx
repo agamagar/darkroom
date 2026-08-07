@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Circle, Line } from 'react-native-svg';
 
@@ -19,28 +20,33 @@ import { theme } from '../theme';
  * on reanimated + gesture-handler directly — a library sheet earns its keep
  * on multi-snap-point scrolling content, not two picker rows.
  *
- * `open` is a 0..1 shared value driving everything: sheet translate, backdrop
- * opacity, floater fade. One value, no disagreement about state.
+ * Split view, not modal: there is no backdrop, and the caller receives the
+ * same 0..1 `progress` value the sheet animates with, so it can shift the
+ * stage up in lockstep and keep the specimen visible while the wheels turn.
+ * That co-visibility is the whole point — you watch the component change as
+ * you change it.
  */
 
-const SHEET_HEIGHT = 240;
+export const SHEET_HEIGHT = 240;
 const FLOATER_SIZE = 52;
 /** Drag past this fraction of the sheet height (or fling) and it dismisses. */
 const DISMISS_FRACTION = 0.33;
 
 export function BenchSheet({
   visible,
+  progress,
   onOpen,
   onClose,
   children,
 }: {
   visible: boolean;
+  /** Owned by the caller so the stage can animate off the same value. */
+  progress: SharedValue<number>;
   onOpen: () => void;
   onClose: () => void;
   children: React.ReactNode;
 }) {
   const { height: screenHeight } = useWindowDimensions();
-  const open = useSharedValue(visible ? 1 : 0);
   /** Extra translate while the finger drags the sheet down. */
   const drag = useSharedValue(0);
 
@@ -50,16 +56,16 @@ export function BenchSheet({
   useEffect(() => {
     if (visible) {
       // Timing, not spring — the sheet should arrive and stop, no bounce.
-      open.value = withTiming(1, {
+      progress.value = withTiming(1, {
         duration: 260,
         easing: Easing.out(Easing.cubic),
       });
     }
-  }, [visible, open]);
+  }, [visible, progress]);
 
   const close = () => {
     drag.value = withTiming(0, { duration: 120 });
-    open.value = withTiming(0, { duration: 200 });
+    progress.value = withTiming(0, { duration: 200 });
     onClose();
   };
 
@@ -85,34 +91,18 @@ export function BenchSheet({
     transform: [
       {
         translateY:
-          interpolate(open.value, [0, 1], [SHEET_HEIGHT, 0]) + drag.value,
+          interpolate(progress.value, [0, 1], [SHEET_HEIGHT, 0]) + drag.value,
       },
     ],
   }));
 
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity:
-      open.value * interpolate(drag.value, [0, SHEET_HEIGHT], [1, 0]) * 0.6,
-  }));
-
   const floaterStyle = useAnimatedStyle(() => ({
-    opacity: 1 - open.value,
-    transform: [{ scale: interpolate(open.value, [0, 1], [1, 0.8]) }],
+    opacity: 1 - progress.value,
+    transform: [{ scale: interpolate(progress.value, [0, 1], [1, 0.8]) }],
   }));
 
   return (
     <>
-      {/* Backdrop — tap anywhere above the sheet to dismiss. */}
-      {visible && (
-        <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
-          <Pressable
-            accessibilityLabel="Close controls"
-            style={styles.backdrop}
-            onPress={close}
-          />
-        </Animated.View>
-      )}
-
       {/* The floater. Sits out of the way bottom-left; fades as the sheet
           rises since the sheet replaces it. */}
       <Animated.View
@@ -130,7 +120,15 @@ export function BenchSheet({
       <GestureDetector gesture={pan}>
         <Animated.View
           style={[styles.sheet, { top: screenHeight - SHEET_HEIGHT }, sheetStyle]}>
-          <View style={styles.grabber} />
+          {/* No backdrop in a split view, so the grabber is also the close
+              button for anyone not inclined to drag. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close variant controls"
+            hitSlop={12}
+            onPress={close}>
+            <View style={styles.grabber} />
+          </Pressable>
           {children}
         </Animated.View>
       </GestureDetector>
@@ -152,10 +150,6 @@ function SlidersIcon() {
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
   floaterWrap: {
     position: 'absolute',
     left: theme.space.lg,

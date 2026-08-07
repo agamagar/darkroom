@@ -1,9 +1,13 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 
-import { BenchSheet } from './src/bench/BenchSheet';
+import { BenchSheet, SHEET_HEIGHT } from './src/bench/BenchSheet';
 import { VariantPicker } from './src/bench/VariantPicker';
 import {
   INITIAL_SELECTION,
@@ -19,13 +23,21 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // The sheet writes 0..1 here; the stage reads it. Split view means the
+  // specimen gives up half the sheet's height and stays centred in the rest,
+  // visible while the wheels turn.
+  const sheetProgress = useSharedValue(0);
+  const stageStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: (-sheetProgress.value * SHEET_HEIGHT) / 2 }],
+  }));
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.root}>
         {/* The specimen sits alone in the middle with nothing to compare
             itself against — the sheet swaps what is under the light. */}
-        <View style={styles.stage}>
+        <Animated.View style={[styles.stage, stageStyle]}>
           <NegotiateButton
             // Remounts on selection change so a specimen that pins its press
             // value at mount picks the new one up.
@@ -33,11 +45,12 @@ export default function App() {
             onPress={() => {}}
             {...propsFor(selection)}
           />
-        </View>
+        </Animated.View>
       </SafeAreaView>
 
       <BenchSheet
         visible={sheetOpen}
+        progress={sheetProgress}
         onOpen={() => setSheetOpen(true)}
         onClose={() => setSheetOpen(false)}>
         <VariantPicker
