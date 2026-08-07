@@ -148,7 +148,7 @@ type VariantSpec = {
   carveInset?: boolean;
   /** Banded steel fill with a sheen that sweeps on tilt and press. */
   chromeBase?: boolean;
-  /** Design-tool chrome (dashed border, handles, dims) that fades as the press renders. */
+  /** Design-tool chrome (dashed border, handles) that fades as the press renders. */
   blueprintChrome?: boolean;
   /** Label treatment. Gradient is the design's masked fill. */
   label:
@@ -1121,8 +1121,8 @@ function ChromeSheen() {
  *
  * Every construction line sits under a radial mask that reaches zero at the
  * centre, so the drawing dissolves exactly where the label lives and
- * resolves toward the rims. The selection chrome (dashed bounds, handles,
- * dimension tag) stays unmasked — annotation, not construction.
+ * resolves toward the rims. The selection chrome (dashed bounds and corner
+ * handles) stays unmasked — annotation, not construction.
  */
 function BlueprintChrome() {
   const c = '#7FB8FF';
@@ -1200,7 +1200,6 @@ function BlueprintChrome() {
             fill={theme.color.bg} stroke={c} strokeWidth={1} />
         ))}
       </Svg>
-      <Text style={styles.blueprintTag}>272 × 68</Text>
     </View>
   );
 }
@@ -1364,15 +1363,6 @@ const styles = StyleSheet.create({
   },
   glyphPart: {
     position: 'absolute',
-  },
-  blueprintTag: {
-    position: 'absolute',
-    top: 6,
-    left: 14,
-    color: '#7FB8FF',
-    fontSize: 9,
-    letterSpacing: 0.5,
-    fontVariant: ['tabular-nums'],
   },
   label: {
     // Google Sans Flex Regular, per the design; bundled in src/assets/fonts.
