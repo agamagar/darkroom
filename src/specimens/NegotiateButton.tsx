@@ -338,13 +338,6 @@ export function NegotiateButton({
 
   const litStyle = useAnimatedStyle(() => ({ opacity: press.value }));
 
-  const shiftStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: glowShift?.x.value ?? 0 },
-      { translateY: glowShift?.y.value ?? 0 },
-    ],
-  }));
-
   return (
     <Animated.View style={[styles.pillWrapper, pillStyle, style]}>
       <Pressable
@@ -375,17 +368,17 @@ export function NegotiateButton({
           means the two states share their geometry exactly.
         */}
         {spec.glow && (
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.litLayer, shiftStyle]}>
-            {spec.glow.rest > 0 && <GlowWash config={spec.glow} lit={false} />}
+          <View pointerEvents="none" style={styles.litLayer}>
+            {spec.glow.rest > 0 && (
+              <GlowWash config={spec.glow} lit={false} shift={glowShift} />
+            )}
             <Animated.View
               pointerEvents="none"
               style={[styles.litLayer, litStyle]}
               needsOffscreenAlphaCompositing>
-              <GlowWash config={spec.glow} lit />
+              <GlowWash config={spec.glow} lit shift={glowShift} />
             </Animated.View>
-          </Animated.View>
+          </View>
         )}
         {spec.dish && (
           <Animated.View
@@ -411,9 +404,11 @@ export function NegotiateButton({
 function GlowWash({
   config,
   lit,
+  shift,
 }: {
   config: NonNullable<VariantSpec['glow']>;
   lit: boolean;
+  shift?: { x: SharedValue<number>; y: SharedValue<number> };
 }) {
   const { edge, color, core, squash = 1, spread = 1 } = config;
   const opacity = lit ? config.lit : config.rest;
@@ -436,6 +431,20 @@ function GlowWash({
           ry: (GLOW_ELLIPSE.height / 2) * squash,
         };
   const id = `wash-${edge}-${color.replace('#', '')}-${lit ? 'lit' : 'rest'}-${squash}-${spread}`;
+
+  // Tilt moves where the light is BRIGHTEST, not where it reaches. The
+  // ellipse only covers ~88% of the pill, so translating the layer drags its
+  // falloff edge into frame and leaves the far side unlit — visibly broken.
+  // Shifting the focal point instead keeps the lit area pinned and just
+  // slides the hotspot inside it, which is also what a moving light does.
+  const focal = useAnimatedProps(() => {
+    const dx = shift ? shift.x.value / (geom.rx * 2) : 0;
+    const dy = shift ? shift.y.value / (geom.ry * 2) : 0;
+    return {
+      fx: `${(0.5 + dx) * 100}%`,
+      fy: `${(0.5 + dy) * 100}%`,
+    };
+  });
   // A wide wash needs a long tail; a tight one wants the original two-step
   // falloff. Extra stops keep the ramp smooth all the way to zero.
   const softTail = spread > 1;
@@ -446,7 +455,13 @@ function GlowWash({
           {/* Stops are keyed arrays, never fragments: react-native-svg
               clones gradient children with a `parent` prop, and a Fragment
               rejects it ("Invalid prop `parent` supplied to React.Fragment"). */}
-          <RadialGradient id={id} cx="50%" cy="50%" rx="50%" ry="50%">
+          <AnimatedRadialGradient
+            id={id}
+            cx="50%"
+            cy="50%"
+            rx="50%"
+            ry="50%"
+            animatedProps={focal}>
             {(core
               ? softTail
                 ? [
@@ -469,7 +484,7 @@ function GlowWash({
             ).concat(
               <Stop key="sEnd" offset="1" stopColor={color} stopOpacity={0} />,
             )}
-          </RadialGradient>
+          </AnimatedRadialGradient>
         </Defs>
         <Ellipse cx={geom.cx} cy={geom.cy} rx={geom.rx} ry={geom.ry} fill={`url(#${id})`} />
       </Svg>
@@ -641,6 +656,7 @@ const ARROWS: Record<ArrowKind, ArrowSpec> = {
 const GLYPH_LOOP_MS = 2000;
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedRadialGradient = Animated.createAnimatedComponent(RadialGradient);
 
 /**
  * The negotiate glyph, per the file's motion data (2s loop): the downtrend

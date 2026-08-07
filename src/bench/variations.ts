@@ -38,15 +38,15 @@ export type Gyro = (typeof GYROS)[number];
 /**
  * Max glow offset in pt at full tilt, per level.
  *
- * Sized against what is being moved, not against the button: the wash
- * ellipse is ~240pt wide inside a 272pt pill (wider still on molten, which
- * spreads 2.4x). A 10pt shift is 4% of that — below the perceptual floor for
- * a soft gradient, which is why the first pass read as nothing happening.
+ * These move the gradient's FOCAL POINT, not the wash itself — see GlowWash.
+ * Expressed in pt of hotspot travel, then converted against each wash's own
+ * radii, so the same number reads consistently across a tight ellipse and
+ * molten's 2.4x spread.
  */
 export const GYRO_AMPLITUDE: Record<Gyro, number> = {
   off: 0,
-  medium: 18,
-  extreme: 48,
+  medium: 12,
+  extreme: 30,
 };
 
 /**
