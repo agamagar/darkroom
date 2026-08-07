@@ -141,6 +141,13 @@ type VariantSpec = {
    * picture the boxShadow drew, only now it can move.
    */
   insetThrow?: boolean;
+  /**
+   * Pressing crossfades the ENTIRE face to concave's pressed appearance —
+   * primary/950 base, top-edge inset throw, dish — as an opaque overlay
+   * riding the press value, while this variant's own chrome (border ring)
+   * dims out beneath it. At full press the button IS concave pressed.
+   */
+  concavePress?: boolean;
   /** Photo-paper label: latent at rest, develops to full under the press. */
   developLabel?: boolean;
   /** The light as the EDGE: a neon tube ring, overdriven by the press. */
@@ -392,7 +399,7 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     violetBase: true,
     drawIcon: true,
     gradientBorder: true,
-    dish: true,
+    concavePress: true,
     glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.5 },
     label: { kind: 'gradient' },
   },
@@ -567,6 +574,15 @@ export function NegotiateButton({
             <BlueprintChrome />
           </Animated.View>
         )}
+        {spec.concavePress && (
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.litLayer, litStyle]}>
+            <View style={styles.concaveFill} />
+            <InsetThrow />
+            <ConcaveDish />
+          </Animated.View>
+        )}
         {spec.dish && (
           <Animated.View
             pointerEvents="none"
@@ -579,7 +595,14 @@ export function NegotiateButton({
         <Animated.View style={developStyle}>
           <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
         </Animated.View>
-        {spec.gradientBorder && <GradientBorderRing />}
+        {spec.gradientBorder &&
+          (spec.concavePress ? (
+            <Animated.View pointerEvents="none" style={[styles.litLayer, dimStyle]}>
+              <GradientBorderRing />
+            </Animated.View>
+          ) : (
+            <GradientBorderRing />
+          ))}
       </Pressable>
     </Animated.View>
   );
@@ -1422,6 +1445,10 @@ const styles = StyleSheet.create({
   },
   pillDisabled: {
     opacity: 0.5,
+  },
+  concaveFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: theme.color.primary950,
   },
   litLayer: {
     position: 'absolute',
