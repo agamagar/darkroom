@@ -598,6 +598,18 @@ export function NegotiateButton({
     ],
   }));
   /**
+   * The metal itself answers the tilt: pitching the phone slides the band
+   * horizon (translateY), rolling drifts it a touch sideways — the way a
+   * real polished surface re-aims its reflections. The sheen streak rides
+   * separately at 5x.
+   */
+  const bandTiltStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (glowShift?.x.value ?? 0) * 0.3 },
+      { translateY: (glowShift?.y.value ?? 0) * 0.9 },
+    ],
+  }));
+  /**
    * Chrome sheen: tilt slides the reflection; holding sweeps it back and
    * forth on the hold clock — polished metal turning under the light for as
    * long as the finger stays down, still the moment it lifts.
@@ -673,7 +685,9 @@ export function NegotiateButton({
         )}
         {spec.chromeBase && (
           <>
-            <ChromeBase />
+            <Animated.View pointerEvents="none" style={[styles.litLayer, bandTiltStyle]}>
+              <ChromeBase />
+            </Animated.View>
             <Animated.View
               pointerEvents="none"
               style={[styles.litLayer, sheenStyle]}>
@@ -1371,9 +1385,15 @@ function CarveInset() {
  * amethyst rather than steel. Same band structure, same sheen behaviour.
  */
 function ChromeBase() {
+  // Oversized canvas: the band layer translates up to ~30pt on tilt, and an
+  // SVG clips at its own bounds (chrome's sheen taught that lesson).
+  const M = 80;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+      <Svg
+        width={FRAME.width + M * 2}
+        height={FRAME.height + M * 2}
+        style={{ position: 'absolute', left: -M, top: -M }}>
         <Defs>
           <SvgLinearGradient id="chromeBands" x1="0.5" y1="0" x2="0.5" y2="1">
             <Stop offset="0" stopColor="#BE9AFF" />
@@ -1383,7 +1403,8 @@ function ChromeBase() {
             <Stop offset="1" stopColor="#A87BFF" />
           </SvgLinearGradient>
         </Defs>
-        <Rect width={FRAME.width} height={FRAME.height} fill="url(#chromeBands)" />
+        <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+          fill="url(#chromeBands)" />
       </Svg>
     </View>
   );
@@ -1410,11 +1431,11 @@ function ChromeSheen() {
               bright streak keeps its ~50pt physical width on the wider
               gradient line. */}
           <SvgLinearGradient id="chromeSheen" x1="0" y1="0.5" x2="1" y2="0.5">
-            <Stop offset="0" stopColor="#E2CFFF" stopOpacity={0} />
-            <Stop offset="0.472" stopColor="#E2CFFF" stopOpacity={0.06} />
-            <Stop offset="0.5" stopColor="#E2CFFF" stopOpacity={0.5} />
-            <Stop offset="0.528" stopColor="#E2CFFF" stopOpacity={0.06} />
-            <Stop offset="1" stopColor="#E2CFFF" stopOpacity={0} />
+            <Stop offset="0" stopColor="#F4EDFF" stopOpacity={0} />
+            <Stop offset="0.472" stopColor="#F4EDFF" stopOpacity={0.1} />
+            <Stop offset="0.5" stopColor="#F4EDFF" stopOpacity={0.72} />
+            <Stop offset="0.528" stopColor="#F4EDFF" stopOpacity={0.1} />
+            <Stop offset="1" stopColor="#F4EDFF" stopOpacity={0} />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
