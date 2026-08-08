@@ -11,9 +11,10 @@ import {
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
 } from 'react-native-reanimated';
 
-import { BenchSheet, SHEET_HEIGHT } from './src/bench/BenchSheet';
+import { BenchPanel, PANEL_HEIGHT } from './src/bench/BenchSheet';
 import {
   DESIGN_FRAME,
   SPECIMEN_SLOT,
@@ -37,21 +38,21 @@ import { theme } from './src/theme';
 
 export default function App() {
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [floaterHidden, setFloaterHidden] = useState(false);
   const { width, height } = useWindowDimensions();
 
-  // Two-finger tap-and-hold anywhere on the stage tucks the floater away
-  // (and brings it back) — for clean screenshots of a screen without the
-  // bench chrome in the corner. Two fingers so it can never collide with
-  // pressing a specimen.
+  // 1 = control pane tucked away (two-finger hold), 0 = docked split view.
+  const panelHidden = useSharedValue(0);
+
+  // Two-finger tap-and-hold anywhere on the stage tucks the whole control
+  // pane away (and brings it back) — clean screenshots of a screen without
+  // bench chrome. Two fingers so it can never collide with a specimen press.
   // (A Pan, not a LongPress — LongPress cannot require two pointers.)
-  const toggleFloater = Gesture.Pan()
+  const togglePanel = Gesture.Pan()
     .minPointers(2)
     .maxPointers(2)
     .activateAfterLongPress(350)
     .onStart(() => {
-      setFloaterHidden((h) => !h);
+      panelHidden.value = panelHidden.value === 0 ? 1 : 0;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     })
     .runOnJS(true);
@@ -68,12 +69,13 @@ export default function App() {
   // a hook and not four lines inline.
   const glowShift = useGlowTilt(selection.gyro);
 
-  // The sheet writes 0..1 here; the stage reads it. Split view means the
-  // stage gives up half the sheet's height and the specimen stays visible
-  // while the wheels turn.
-  const sheetProgress = useSharedValue(0);
+  // The stage cedes the pane's height while it is docked and reclaims it
+  // when the pane tucks away — the split in the split view.
   const stageStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: (-sheetProgress.value * SHEET_HEIGHT) / 2 }],
+    paddingBottom: withTiming(
+      panelHidden.value === 0 ? PANEL_HEIGHT : 0,
+      { duration: 240 },
+    ),
   }));
 
   const specimen = (
@@ -108,7 +110,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
-      <GestureDetector gesture={toggleFloater}>
+      <GestureDetector gesture={togglePanel}>
         <Animated.View
           style={[
             styles.stage,
@@ -143,12 +145,7 @@ export default function App() {
         </Animated.View>
       </GestureDetector>
 
-      <BenchSheet
-        visible={sheetOpen}
-        progress={sheetProgress}
-        floaterHidden={floaterHidden}
-        onOpen={() => setSheetOpen(true)}
-        onClose={() => setSheetOpen(false)}>
+      <BenchPanel hidden={panelHidden}>
         <SegmentedRow
           label="State"
           options={STATES}
@@ -179,7 +176,7 @@ export default function App() {
           value={selection.gyro}
           onChange={(gyro) => setSelection((s) => ({ ...s, gyro }))}
         />
-      </BenchSheet>
+      </BenchPanel>
     </GestureHandlerRootView>
   );
 }

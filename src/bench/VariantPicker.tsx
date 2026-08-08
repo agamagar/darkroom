@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
-    borderRadius: theme.radius.sm,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(139, 124, 246, 0.15)',
     backgroundColor: 'rgba(139, 124, 246, 0.04)',
