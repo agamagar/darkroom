@@ -812,7 +812,7 @@ export function NegotiateButton({
             <CarveInset />
           </Animated.View>
         )}
-        {spec.blueprintChrome && <BlueprintChrome press={press} />}
+        {spec.blueprintChrome && <BlueprintChrome press={press} holdT={holdT} />}
         {spec.concavePress && (
           <Animated.View
             pointerEvents="none"
@@ -1559,44 +1559,81 @@ function ChromeSheen() {
  * resolves toward the rims. The selection chrome (dashed bounds and corner
  * handles) stays unmasked — annotation, not construction.
  */
-/** One travelling ring: slides from its home to its golden seat as t runs 0->1. */
-function BlueprintRing({
-  x0,
-  target,
-  ry,
-  travel,
+/** Blueprint geometry, hoisted for the ring components. */
+const BP = { fx: 8, fw: 256, fr: 27 } as const;
+const BP_CY = 8 + BP.fr;
+const BP_CAP_L = BP.fx + BP.fr;
+const BP_CAP_R = BP.fx + BP.fw - BP.fr;
+const BP_CENTRE = BP.fx + BP.fw / 2;
+
+/** Capsule surface radius at x — full over the body, sqrt inside the caps. */
+function capsuleRy(x: number): number {
+  'worklet';
+  const d = x < BP_CAP_L ? BP_CAP_L - x : x > BP_CAP_R ? x - BP_CAP_R : 0;
+  return d === 0
+    ? BP.fr
+    : BP.fr * Math.sqrt(Math.max(0, 1 - (d / BP.fr) ** 2));
+}
+
+/** A resting station ring; yields to the flow as the press arrives. */
+function BlueprintStaticRing({
+  x, ry, press,
+}: { x: number; ry: number; press: SharedValue<number> }) {
+  const props = useAnimatedProps(() => ({
+    opacity: 0.45 * (1 - press.value),
+  }));
+  return (
+    <AnimatedEllipse cx={x} cy={BP_CY} ry={ry} rx={Math.max(2, ry * 0.3)}
+      fill="none" stroke="#7FB8FF" strokeWidth={0.8} animatedProps={props} />
+  );
+}
+
+/**
+ * One ring of the pressed-state flow: born at a cap tip, growing to full
+ * height as it clears the cap (the capsule's own sqrt profile does the
+ * growing), travelling inward, dissolving as it nears the centre. Five per
+ * side on staggered phases of the hold clock = a continuous conveyor from
+ * both ends for as long as the finger stays down.
+ */
+function BlueprintFlowRing({
+  side, index, press, holdT,
 }: {
-  x0: number;
-  target: number;
-  ry: number;
-  travel: SharedValue<number>;
+  side: 1 | -1;
+  index: number;
+  press: SharedValue<number>;
+  holdT: SharedValue<number>;
 }) {
   const props = useAnimatedProps(() => {
-    const t = Easing.out(Easing.cubic)(travel.value);
+    const phase = (((holdT.value - index * 0.2) % 1) + 1) % 1;
+    const startX = BP_CAP_L - BP.fr + 4; // just inside the left cap tip
+    const endX = BP_CENTRE - 14;
+    const xL = startX + (endX - startX) * phase;
+    const x = side === 1 ? xL : 2 * BP_CENTRE - xL;
+    const ry = capsuleRy(xL);
+    const fadeIn = Math.min(1, phase / 0.1);
+    const fadeOut = phase > 0.7 ? 1 - (phase - 0.7) / 0.3 : 1;
     return {
-      cx: x0 + (target - x0) * t,
-      // Rings persist at their golden seats through the hold — dimmed to
-      // sit with the rendered glow, not erased by it.
-      opacity: 0.45 * (1 - 0.5 * travel.value),
+      cx: x,
+      ry,
+      rx: Math.max(2, ry * 0.3),
+      opacity: press.value * 0.5 * fadeIn * fadeOut,
     };
   });
   return (
-    <AnimatedEllipse
-      cy={BLUEPRINT_CY}
-      ry={ry}
-      rx={Math.max(2, ry * 0.3)}
-      fill="none"
-      stroke="#7FB8FF"
-      strokeWidth={0.8}
-      animatedProps={props}
-    />
+    <AnimatedEllipse cy={BP_CY} fill="none" stroke="#7FB8FF"
+      strokeWidth={0.8} animatedProps={props} />
   );
 }
 
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
-const BLUEPRINT_CY = 8 + 27; // f.y + fr, hoisted for the ring component
 
-function BlueprintChrome({ press }: { press: SharedValue<number> }) {
+function BlueprintChrome({
+  press,
+  holdT,
+}: {
+  press: SharedValue<number>;
+  holdT: SharedValue<number>;
+}) {
   const c = '#7FB8FF';
   const inset = 1.5;
   const w = FRAME.width - inset * 2;
@@ -1605,72 +1642,27 @@ function BlueprintChrome({ press }: { press: SharedValue<number> }) {
     [inset, inset], [FRAME.width - inset, inset],
     [inset, FRAME.height - inset], [FRAME.width - inset, FRAME.height - inset],
   ];
+  const f = { x: BP.fx, y: 8, w: BP.fw, h: BP.fr * 2 };
+  const fr = BP.fr;
 
-  // The capsule being sectioned: slightly inside the rim.
-  const f = { x: 8, y: 8, w: 256, h: 54 };
-  const fr = f.h / 2;
-  const cy = f.y + fr;
-  const capL = f.x + fr;
-  const capR = f.x + f.w - fr;
-  /** How flat an edge-on circular section projects. */
-  const FORESHORTEN = 0.3;
-
-  // Body rings every ~26pt, plus a fixed cascade INSIDE each cap (at 45%,
-  // 72% and 91% of the cap depth) so the rounding is drawn, not implied —
-  // one ring per cap reads as a chamfer, three read as a sphere.
+  // Resting stations: body rings every ~26pt plus the cap cascades.
   const ringXs: number[] = [];
-  for (let x = capL; x <= capR; x += 26) ringXs.push(x);
+  for (let x = BP_CAP_L; x <= BP_CAP_R; x += 26) ringXs.push(x);
   for (const t of [0.45, 0.72, 0.91]) {
-    ringXs.push(capL - fr * t);
-    ringXs.push(capR + fr * t);
+    ringXs.push(BP_CAP_L - fr * t);
+    ringXs.push(BP_CAP_R + fr * t);
   }
   const rings = ringXs
-    .map((x) => {
-      const d = x < capL ? capL - x : x > capR ? x - capR : 0;
-      const r = d === 0 ? fr : fr * Math.sqrt(Math.max(0, 1 - (d / fr) ** 2));
-      return { x, ry: r, rx: Math.max(2, r * FORESHORTEN) };
-    })
+    .map((x) => ({ x, ry: capsuleRy(x) }))
     .filter((ring) => ring.ry > 5);
 
-  // Golden seats: on press each ring travels to the centre, and where it
-  // stops follows phi — per side, the k-th ring out sits at a cumulative
-  // gap of 4 * (phi^k - 1)/(phi - 1): 0, 4, 10.5, 21, 38, 65.6, 110pt.
-  // Rank is by distance from centre, sides kept, so rings never cross.
-  const centre = f.x + f.w / 2;
-  const bySide: Record<'l' | 'r', typeof rings> = { l: [], r: [] };
-  for (const ring of rings) bySide[ring.x < centre ? 'l' : 'r'].push(ring);
-  const seats = new Map<number, number>();
-  for (const side of ['l', 'r'] as const) {
-    bySide[side]
-      .sort((a, b) => Math.abs(a.x - centre) - Math.abs(b.x - centre))
-      .forEach((ring, k) => {
-        const gap = 4 * ((PHI ** k - 1) / (PHI - 1));
-        seats.set(ring.x, centre + (side === 'l' ? -gap : gap));
-      });
-  }
-
-  // The convergence runs on its own clock chasing the press — 550ms out,
-  // 350ms home — so the travel is watchable rather than lost in the 90ms
-  // press-in. The silhouette and handles fade on the same clock.
-  const travel = useSharedValue(0);
-  useAnimatedReaction(
-    () => press.value > 0.05,
-    (active, prev) => {
-      if (active === prev) return;
-      travel.value = withTiming(active ? 1 : 0, {
-        duration: active ? 550 : 350,
-        easing: Easing.linear,
-      });
-    },
-  );
-  // The silhouette stays through the hold (dimmed) so the converged rings
-  // still live inside a pill rather than floating over bare glow; only the
-  // corner handles — pure annotation — fade all the way out.
+  // The silhouette stays through the hold (dimmed) so the flow lives inside
+  // a pill; the corner handles — pure annotation — fade out entirely.
   const silhouetteFade = useAnimatedStyle(() => ({
-    opacity: 1 - 0.55 * travel.value,
+    opacity: 1 - 0.55 * press.value,
   }));
   const handleFade = useAnimatedStyle(() => ({
-    opacity: 1 - travel.value,
+    opacity: 1 - press.value,
   }));
 
   return (
@@ -1690,11 +1682,16 @@ function BlueprintChrome({ press }: { press: SharedValue<number> }) {
         </Defs>
 
         <G mask="url(#fadeMask)">
-          {/* Section rings — travelling to their golden seats on press. */}
+          {/* Stations at rest; the flow takes over as the press arrives. */}
           {rings.map(({ x, ry }) => (
-            <BlueprintRing key={x} x0={x} target={seats.get(x) ?? centre}
-              ry={ry} travel={travel} />
+            <BlueprintStaticRing key={x} x={x} ry={ry} press={press} />
           ))}
+          {([1, -1] as const).map((side) =>
+            [0, 1, 2, 3, 4].map((i) => (
+              <BlueprintFlowRing key={`${side}-${i}`} side={side} index={i}
+                press={press} holdT={holdT} />
+            )),
+          )}
         </G>
       </Svg>
 
