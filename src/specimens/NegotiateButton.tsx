@@ -2093,6 +2093,12 @@ function StitchFx({ press, holdT }: FxProps) {
           rx={(FRAME.height - 22) / 2} fill="none" stroke="#8F82C9"
           strokeOpacity={0.4} strokeWidth={1.8} strokeLinecap="round"
           strokeDasharray="0.1 8" />
+        {/* Third ring: finest beads, quietest, offset half a cycle so its
+            dots sit between the inner ring's — three depths of beadwork. */}
+        <Rect x={16} y={16} width={FRAME.width - 32} height={FRAME.height - 32}
+          rx={(FRAME.height - 32) / 2} fill="none" stroke="#6F639F"
+          strokeOpacity={0.3} strokeWidth={1.2} strokeLinecap="round"
+          strokeDasharray="0.1 8" strokeDashoffset={4} />
       </Svg>
     </View>
   );
