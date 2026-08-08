@@ -265,9 +265,10 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   molten: {
     pill: {
       backgroundColor: '#181140',
-      // Sharper vessel: a crisp 1pt lilac rim instead of the soft hairline.
-      borderWidth: 1,
-      borderColor: 'rgba(206, 199, 251, 0.32)',
+      // No border here: MoltenRim is the vessel's ONE stroke — a gradient
+      // ring bright at the lip, settling to a crisp hairline down the sides.
+      // Two nested strokes read as a double edge.
+      borderWidth: 0,
       boxShadow: `inset 0px 0px 22px 0px rgba(109, 92, 240, 0.55), 0px 4px 32px 0px rgba(109, 92, 240, 0.28)`,
     },
     emberPress: true,
@@ -1765,7 +1766,12 @@ function MoltenSpark() {
   );
 }
 
-/** A crisp top rim catch-light on the vessel's lip. */
+/**
+ * The vessel's single stroke: one gradient ring, bright catch-light at the
+ * lip settling into a crisp lilac hairline down the sides and floor. This
+ * replaced the pill border + separate catch-light pair, which nested two
+ * strokes a point apart and read as a double edge.
+ */
 function MoltenRim() {
   const inset = 1.2;
   const h = FRAME.height - inset * 2;
@@ -1774,8 +1780,9 @@ function MoltenRim() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="moltenRim" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#F3F1FE" stopOpacity={0.28} />
-            <Stop offset="0.35" stopColor="#F3F1FE" stopOpacity={0} />
+            <Stop offset="0" stopColor="#F3F1FE" stopOpacity={0.34} />
+            <Stop offset="0.3" stopColor="#CEC7FB" stopOpacity={0.3} />
+            <Stop offset="1" stopColor="#CEC7FB" stopOpacity={0.24} />
           </SvgLinearGradient>
         </Defs>
         <Rect x={inset} y={inset} width={FRAME.width - inset * 2} height={h}
