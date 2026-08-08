@@ -1581,8 +1581,8 @@ function ChromeSheen() {
  * handles) stays unmasked — annotation, not construction.
  */
 /** Blueprint geometry, hoisted for the ring components. */
-const BP = { fx: 8, fw: 256, fr: 27 } as const;
-const BP_CY = 8 + BP.fr;
+const BP = { fx: 2, fw: 268, fr: 32 } as const;
+const BP_CY = 2 + BP.fr;
 const BP_CAP_L = BP.fx + BP.fr;
 const BP_CAP_R = BP.fx + BP.fw - BP.fr;
 const BP_CENTRE = BP.fx + BP.fw / 2;
@@ -1663,7 +1663,7 @@ function BlueprintChrome({
     [inset, inset], [FRAME.width - inset, inset],
     [inset, FRAME.height - inset], [FRAME.width - inset, FRAME.height - inset],
   ];
-  const f = { x: BP.fx, y: 8, w: BP.fw, h: BP.fr * 2 };
+  const f = { x: BP.fx, y: 2, w: BP.fw, h: BP.fr * 2 };
   const fr = BP.fr;
 
   // Resting stations: body rings every ~26pt plus the cap cascades.
@@ -1837,65 +1837,46 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
   }
 }
 
-/**
- * Aurora borealis, constructed as the phenomenon is: not drifting colour
- * blocks but RAYS — sixteen vertical shafts hanging from an arc, each with
- * a bright lower edge fading upward (that is how the physics reads: the
- * emission is brightest at the curtain's bottom). While held, a travelling
- * wave runs the curtain: each ray's height and brightness undulate with a
- * phase set by its position, so ripples visibly propagate along the arc.
- * Tilt sways the whole curtain gently. Rays sit on an arched baseline.
- */
-const AURORA_RAYS = Array.from({ length: 16 }, (_, i) => ({
-  x: 12 + i * 16.4,
-  baseY: 46 - 9 * Math.sin((Math.PI * i) / 15),
-  phase: i / 16,
-  hue: i % 5 === 3 ? '#6D5CF0' : i % 2 === 0 ? '#A99BF5' : '#CEC7FB',
-}));
-
-function AuroraRay({
-  ray, press, holdT, shift,
-}: FxProps & { ray: (typeof AURORA_RAYS)[number] }) {
-  const props = useAnimatedProps(() => {
-    const wave =
-      Math.sin(2 * Math.PI * (holdT.value * 2 + ray.phase * 2)) * 0.5 +
-      Math.sin(2 * Math.PI * (holdT.value * 3 + ray.phase * 5)) * 0.5;
-    const hgt = 16 + (6 + wave * 8) * (0.4 + press.value * 0.6);
-    const sway = (shift?.x.value ?? 0) * 0.25;
-    return {
-      x: ray.x + sway,
-      y: ray.baseY - hgt,
-      height: hgt,
-      fillOpacity: 0.5 + 0.35 * wave * press.value + press.value * 0.15,
-    };
-  });
+/** One aurora curtain: a soft vertical gradient band, drifting. */
+function AuroraCurtain({
+  x0, width, color, rate, phase, press, holdT, shift,
+}: FxProps & { x0: number; width: number; color: string; rate: number; phase: number }) {
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX:
+          (shift?.x.value ?? 0) * rate +
+          Math.sin((holdT.value + phase) * 2 * Math.PI) * 14 * press.value,
+      },
+    ],
+  }));
+  const id = `aur-${color.replace('#', '')}-${x0}`;
   return (
-    <AnimatedRect width={9} rx={2}
-      fill={`url(#auroraRay${ray.hue.slice(1)})`} animatedProps={props} />
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <View pointerEvents="none" style={styles.glowLayer}>
+        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+          <Defs>
+            <SvgLinearGradient id={id} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={color} stopOpacity={0} />
+              <Stop offset="0.5" stopColor={color} stopOpacity={0.4} />
+              <Stop offset="1" stopColor={color} stopOpacity={0} />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x={x0} y={-8} width={width} height={FRAME.height + 16}
+            fill={`url(#${id})`} />
+        </Svg>
+      </View>
+    </Animated.View>
   );
 }
 
 function AuroraFx(fxp: FxProps) {
-  const hues = ['#A99BF5', '#CEC7FB', '#6D5CF0'];
   return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        <Defs>
-          {hues.map((hue) => (
-            <SvgLinearGradient key={hue} id={`auroraRay${hue.slice(1)}`}
-              x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={hue} stopOpacity={0} />
-              <Stop offset="0.55" stopColor={hue} stopOpacity={0.4} />
-              <Stop offset="0.92" stopColor={hue} stopOpacity={0.95} />
-              <Stop offset="1" stopColor={hue} stopOpacity={0.5} />
-            </SvgLinearGradient>
-          ))}
-        </Defs>
-        {AURORA_RAYS.map((ray, i) => (
-          <AuroraRay key={i} ray={ray} {...fxp} />
-        ))}
-      </Svg>
-    </View>
+    <>
+      <AuroraCurtain {...fxp} x0={30} width={80} color="#CEC7FB" rate={0.5} phase={0} />
+      <AuroraCurtain {...fxp} x0={110} width={100} color="#8B7CF6" rate={0.9} phase={0.33} />
+      <AuroraCurtain {...fxp} x0={180} width={70} color="#8B7CF6" rate={1.4} phase={0.66} />
+    </>
   );
 }
 
@@ -1918,9 +1899,11 @@ function RippleRing({ index, press, holdT }: FxProps & { index: number }) {
       width: hw * 2,
       height: ry * 2,
       rx: ry,
-      // Born invisible at the centre, gaining light as it expands; the wrap
-      // is seamless because a ring resets to zero exactly at zero opacity.
-      strokeOpacity: press.value * 0.55 * grow,
+      // Born invisible at the centre, gaining light as it expands — then
+      // dying over the last 15% of travel, so a full-size ring never sits
+      // against the rim reading as a second outline.
+      strokeOpacity:
+        press.value * 0.55 * grow * (grow > 0.85 ? (1 - grow) / 0.15 : 1),
     };
   });
   return (

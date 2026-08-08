@@ -24,7 +24,6 @@ export const TYPES = [
   'drawn',
   'concave',
   'material',
-  'safelight',
   'neon',
   'carve',
   'chrome',
@@ -60,8 +59,8 @@ export type Gyro = (typeof GYROS)[number];
  */
 export const GYRO_AMPLITUDE: Record<Gyro, number> = {
   off: 0,
-  medium: 12,
-  extreme: 30,
+  medium: 4,
+  extreme: 10,
 };
 
 /**
