@@ -100,7 +100,8 @@ export type NegotiateButtonVariant =
   | 'stitch'
   | 'comet'
   | 'glitch'
-  | 'pixel';
+  | 'pixel'
+  | 'stamp';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -187,7 +188,8 @@ type VariantSpec = {
     | 'stitch'
     | 'comet'
     | 'glitch'
-    | 'pixel';
+    | 'pixel'
+    | 'stamp';
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -518,6 +520,13 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     pill: { backgroundColor: '#181140', borderWidth: 0 },
     fx: 'pixel',
     label: { kind: 'solid', color: '#F3F1FE' },
+  },
+
+  /** A postage stamp: perforated paper, cancelled by the press. */
+  stamp: {
+    pill: { backgroundColor: 'transparent', borderWidth: 0 },
+    fx: 'stamp',
+    label: { kind: 'solid', color: '#271D66' },
   },
 
   /** Light under a door: the glow compressed into a hot band at the rim. */
@@ -1824,6 +1833,7 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
     case 'comet': return <CometFx {...fxp} />;
     case 'glitch': return <GlitchFx {...fxp} />;
     case 'pixel': return <PixelFx {...fxp} />;
+    case 'stamp': return <StampFx {...fxp} />;
   }
 }
 
@@ -2389,6 +2399,75 @@ function PixelFx(fxp: FxProps) {
         {PIXELS.map((px, i) => (
           <Pixel key={i} px={px} index={i} {...fxp} />
         ))}
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * A postage stamp. The paper is one evenodd path: the stadium outline with
+ * ~58 circle subpaths punched along its perimeter — the punches are true
+ * holes (transparent), so the perforation reads against any screen behind
+ * it. A printed inner frame, and pressing CANCELS the stamp: a postmark —
+ * ring plus wavy cancellation bars — inks in with the press.
+ */
+const STAMP_PATH = (() => {
+  const r = 32;
+  const cy = 34;
+  const cl = 34;
+  const cr = FRAME.width - 34;
+  let d = `M ${cl} 2 H ${cr} A ${r} ${r} 0 0 1 ${cr} 66 H ${cl} A ${r} ${r} 0 0 1 ${cl} 2 Z`;
+  // Punch holes every ~10.4pt along the perimeter.
+  const straight = cr - cl;
+  const arc = Math.PI * r;
+  const P = straight * 2 + arc * 2;
+  const n = Math.round(P / 10.4);
+  for (let i = 0; i < n; i++) {
+    const t = (i / n) * P;
+    let x: number, y: number;
+    if (t < straight) {
+      x = cl + t; y = 2;
+    } else if (t < straight + arc) {
+      const a = -Math.PI / 2 + (t - straight) / r;
+      x = cr + r * Math.cos(a); y = cy + r * Math.sin(a);
+    } else if (t < straight * 2 + arc) {
+      x = cr - (t - straight - arc); y = 66;
+    } else {
+      const a = Math.PI / 2 + (t - straight * 2 - arc) / r;
+      x = cl + r * Math.cos(a); y = cy + r * Math.sin(a);
+    }
+    const hr = 3.1;
+    d += ` M ${x + hr} ${y} A ${hr} ${hr} 0 1 0 ${x - hr} ${y} A ${hr} ${hr} 0 1 0 ${x + hr} ${y} Z`;
+  }
+  return d;
+})();
+
+function StampPostmark({ press }: FxProps) {
+  const props = useAnimatedProps(() => ({ opacity: press.value * 0.85 }));
+  const AnimatedG = Animated.createAnimatedComponent(G);
+  return (
+    <AnimatedG animatedProps={props} rotation={-12} origin="200, 30">
+      <Circle cx={200} cy={30} r={17} fill="none" stroke="#4636B8"
+        strokeWidth={1.5} />
+      {[24, 30, 36].map((y) => (
+        <Path key={y}
+          d={`M 150 ${y} q 8 -4 16 0 t 16 0 t 16 0 t 16 0 t 16 0 t 16 0`}
+          stroke="#4636B8" strokeWidth={1.3} fill="none" />
+      ))}
+    </AnimatedG>
+  );
+}
+
+function StampFx(fxp: FxProps) {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Path d={STAMP_PATH} fill="#E7E3FD" fillRule="evenodd" />
+        {/* Printed inner frame. */}
+        <Rect x={11} y={11} width={FRAME.width - 22} height={FRAME.height - 22}
+          rx={(FRAME.height - 22) / 2} fill="none" stroke="#4636B8"
+          strokeOpacity={0.75} strokeWidth={1.2} />
+        <StampPostmark {...fxp} />
       </Svg>
     </View>
   );

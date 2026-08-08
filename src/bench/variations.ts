@@ -18,7 +18,6 @@ export type State = (typeof STATES)[number];
  * name back to this list.
  */
 export const TYPES = [
-  'gradient',
   'eclipse',
   'ember',
   'molten',
@@ -39,6 +38,7 @@ export const TYPES = [
   'comet',
   'glitch',
   'pixel',
+  'stamp',
 ] as const;
 export type Type = (typeof TYPES)[number];
 
@@ -82,7 +82,7 @@ export type Selection = {
 
 export const INITIAL_SELECTION: Selection = {
   state: 'default',
-  type: 'gradient',
+  type: 'eclipse',
   screen: 'void',
   gyro: 'off',
   icon: 'off',
