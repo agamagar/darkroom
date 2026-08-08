@@ -95,7 +95,6 @@ export type NegotiateButtonVariant =
   | 'prism'
   | 'hologram'
   | 'starfield'
-  | 'filament'
   | 'spotlight'
   | 'inkwell'
   | 'stitch'
@@ -183,7 +182,6 @@ type VariantSpec = {
     | 'prism'
     | 'hologram'
     | 'starfield'
-    | 'filament'
     | 'spotlight'
     | 'inkwell'
     | 'stitch'
@@ -493,18 +491,11 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     label: { kind: 'solid', color: '#EDEBFF' },
   },
 
-  /** An Edison wire that sags with gravity and overdrives on the hold. */
-  filament: {
-    pill: { backgroundColor: '#120C08', borderColor: 'rgba(255, 201, 138, 0.14)' },
-    fx: 'filament',
-    label: { kind: 'solid', color: '#FFE9CE' },
-  },
-
-  /** A beam that follows the tilt at high gain; pressing widens the cone. */
+  /** A lilac beam that follows the tilt at high gain; pressing widens it. */
   spotlight: {
-    pill: { backgroundColor: '#0A0A16', borderColor: 'rgba(255, 255, 255, 0.08)' },
+    pill: { backgroundColor: '#0B0918', borderColor: 'rgba(196, 181, 253, 0.1)' },
     fx: 'spotlight',
-    label: { kind: 'solid', color: '#F4F2E9' },
+    label: { kind: 'solid', color: '#F3EFFF' },
   },
 
   /** Press floods ink upward; the surface tips with the phone. */
@@ -1792,7 +1783,6 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
     case 'prism': return <PrismFx {...fxp} />;
     case 'hologram': return <HologramFx {...fxp} />;
     case 'starfield': return <StarfieldFx {...fxp} />;
-    case 'filament': return <FilamentFx {...fxp} />;
     case 'spotlight': return <SpotlightFx {...fxp} />;
     case 'inkwell': return <InkwellFx {...fxp} />;
     case 'stitch': return <StitchFx {...fxp} />;
@@ -1980,35 +1970,6 @@ function StarfieldFx(fxp: FxProps) {
   );
 }
 
-/** The Edison wire: sags with gravity, overdrives while held. */
-function FilamentFx({ press, holdT, shift }: FxProps) {
-  const glowProps = useAnimatedProps(() => {
-    const sag = 34 + (shift?.y.value ?? 0) * 0.9;
-    const breath = 0.5 + 0.5 * Math.sin(holdT.value * 2 * Math.PI);
-    return {
-      d: `M 24 34 Q ${FRAME.width / 2} ${sag} ${FRAME.width - 24} 34`,
-      strokeOpacity: 0.25 + press.value * (0.3 + 0.25 * breath),
-    };
-  });
-  const wireProps = useAnimatedProps(() => {
-    const sag = 34 + (shift?.y.value ?? 0) * 0.9;
-    return {
-      d: `M 24 34 Q ${FRAME.width / 2} ${sag} ${FRAME.width - 24} 34`,
-      strokeOpacity: 0.55 + press.value * 0.45,
-    };
-  });
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        <AnimatedPath animatedProps={glowProps} stroke="#FF9D45"
-          strokeWidth={7} strokeLinecap="round" fill="none" />
-        <AnimatedPath animatedProps={wireProps} stroke="#FFD9A8"
-          strokeWidth={1.6} strokeLinecap="round" fill="none" />
-      </Svg>
-    </View>
-  );
-}
-
 /** A warm beam chasing the tilt at high gain; press widens the cone. */
 function SpotlightFx({ press, shift }: FxProps) {
   const M = 100;
@@ -2025,9 +1986,9 @@ function SpotlightFx({ press, shift }: FxProps) {
         style={{ position: 'absolute', left: -M, top: -M }}>
         <Defs>
           <RadialGradient id="spotBeam" cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0" stopColor="#FFF4D6" stopOpacity={0.5} />
-            <Stop offset="0.4" stopColor="#FFEDC2" stopOpacity={0.18} />
-            <Stop offset="1" stopColor="#FFEDC2" stopOpacity={0} />
+            <Stop offset="0" stopColor="#EFE9FF" stopOpacity={0.5} />
+            <Stop offset="0.4" stopColor="#C4B5FD" stopOpacity={0.18} />
+            <Stop offset="1" stopColor="#C4B5FD" stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Ellipse cx={(FRAME.width + M * 2) / 2} cy={(FRAME.height + M * 2) / 2}

@@ -35,7 +35,6 @@ export const TYPES = [
   'prism',
   'hologram',
   'starfield',
-  'filament',
   'spotlight',
   'inkwell',
   'stitch',
