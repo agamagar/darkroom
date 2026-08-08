@@ -519,7 +519,7 @@ export function NegotiateButton({
       if (active) {
         holdT.value = 0;
         holdT.value = withRepeat(
-          withTiming(1, { duration: 2400, easing: Easing.linear }),
+          withTiming(1, { duration: 3200, easing: Easing.linear }),
           -1,
         );
       } else {
