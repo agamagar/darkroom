@@ -14,7 +14,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { BenchPanel, PANEL_HEIGHT } from './src/bench/BenchSheet';
+import { BenchPanel, PANEL_HEIGHT, PANEL_PEEK } from './src/bench/BenchSheet';
 import {
   DESIGN_FRAME,
   SPECIMEN_SLOT,
@@ -42,6 +42,8 @@ export default function App() {
 
   // 1 = control pane tucked away (two-finger hold), 0 = docked split view.
   const panelHidden = useSharedValue(0);
+  // 1 = collapsed to the peeking handle strip (the handle toggles this).
+  const panelCollapsed = useSharedValue(0);
 
   // Two-finger tap-and-hold anywhere on the stage tucks the whole control
   // pane away (and brings it back) — clean screenshots of a screen without
@@ -73,8 +75,12 @@ export default function App() {
   // when the pane tucks away — the split in the split view.
   const stageStyle = useAnimatedStyle(() => ({
     paddingBottom: withTiming(
-      panelHidden.value === 0 ? PANEL_HEIGHT : 0,
-      { duration: 240 },
+      panelHidden.value === 1
+        ? 0
+        : panelCollapsed.value === 1
+          ? PANEL_PEEK
+          : PANEL_HEIGHT,
+      { duration: 260 },
     ),
   }));
 
@@ -145,7 +151,7 @@ export default function App() {
         </Animated.View>
       </GestureDetector>
 
-      <BenchPanel hidden={panelHidden}>
+      <BenchPanel hidden={panelHidden} collapsed={panelCollapsed}>
         <SegmentedRow
           label="State"
           options={STATES}
