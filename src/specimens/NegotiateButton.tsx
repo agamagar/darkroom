@@ -96,7 +96,6 @@ export type NegotiateButtonVariant =
   | 'hologram'
   | 'starfield'
   | 'spotlight'
-  | 'inkwell'
   | 'stitch'
   | 'comet';
 
@@ -183,7 +182,6 @@ type VariantSpec = {
     | 'hologram'
     | 'starfield'
     | 'spotlight'
-    | 'inkwell'
     | 'stitch'
     | 'comet';
   /** Label treatment. Gradient is the design's masked fill. */
@@ -498,16 +496,9 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     label: { kind: 'solid', color: '#F3F1FE' },
   },
 
-  /** Press floods ink upward; the surface tips with the phone. */
-  inkwell: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.18)' },
-    fx: 'inkwell',
-    label: { kind: 'solid', color: '#F3F1FE' },
-  },
-
-  /** Felt and thread; the running stitch marches while held. */
+  /** Just the beads: a running stitch with no fabric behind it. */
   stitch: {
-    pill: { backgroundColor: '#271D66', borderWidth: 0 },
+    pill: { backgroundColor: 'transparent', borderWidth: 0 },
     fx: 'stitch',
     label: { kind: 'solid', color: '#E7E3FD' },
   },
@@ -1783,7 +1774,6 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
     case 'hologram': return <HologramFx {...fxp} />;
     case 'starfield': return <StarfieldFx {...fxp} />;
     case 'spotlight': return <SpotlightFx {...fxp} />;
-    case 'inkwell': return <InkwellFx {...fxp} />;
     case 'stitch': return <StitchFx {...fxp} />;
     case 'comet': return <CometFx {...fxp} />;
   }
@@ -1912,11 +1902,13 @@ function HologramFx({ press, holdT }: FxProps) {
   const crawl = useAnimatedStyle(() => ({
     transform: [{ translateY: -((holdT.value * 8) % 1) * 4 }],
   }));
+  // ONE rim at rest: both strokes sit at the same x and fuse into a single
+  // edge; only the press pulls them chromatically apart.
   const edgeSplit = useAnimatedProps(() => ({
-    x: 2.2 + press.value * 1.4,
+    x: 1.5 + press.value * 1.6,
   }));
   const edgeSplit2 = useAnimatedProps(() => ({
-    x: 0.8 - press.value * 1.4,
+    x: 1.5 - press.value * 1.6,
   }));
   const lines: number[] = [];
   for (let y = -4; y < FRAME.height + 4; y += 4) lines.push(y);
@@ -2049,58 +2041,6 @@ function SpotlightFx({ press, shift }: FxProps) {
 }
 
 /**
- * Ink rising with the press; the surface tips with the phone.
- *
- * No visible edges, by construction: the canvas margin is 140pt (far past
- * any rotation + tip the tilt and lap can produce), and the ink's top is
- * not a hard line — the slab fades in over its first ~14pt via a bounding-
- * box gradient, with a soft wide meniscus glow instead of a stroke. What
- * enters the button is a liquid surface, not the edge of a shape.
- */
-function InkwellFx({ press, holdT, shift }: FxProps) {
-  const M = 140;
-  const SLAB_H = FRAME.height + M;
-  const style = useAnimatedStyle(() => {
-    const tip =
-      (shift?.x.value ?? 0) * -0.12 +
-      Math.sin(holdT.value * 2 * Math.PI) * 1.2 * press.value;
-    return { transform: [{ rotate: `${tip}deg` }] };
-  });
-  const inkProps = useAnimatedProps(() => {
-    const level = press.value * 46;
-    return { y: FRAME.height + M - level };
-  });
-  const surfProps = useAnimatedProps(() => {
-    const level = press.value * 46;
-    return {
-      y1: FRAME.height + M - level + 2,
-      y2: FRAME.height + M - level + 2,
-      strokeOpacity: press.value * 0.3,
-    };
-  });
-  return (
-    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
-      <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
-        style={{ position: 'absolute', left: -M, top: -M }}>
-        <Defs>
-          {/* Bounding-box gradient: the fade fraction rides the slab, so the
-              soft top stays soft at every fill level. */}
-          <SvgLinearGradient id="inkSlab" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#271D66" stopOpacity={0} />
-            <Stop offset={14 / SLAB_H} stopColor="#271D66" stopOpacity={0.8} />
-            <Stop offset="1" stopColor="#181140" stopOpacity={0.92} />
-          </SvgLinearGradient>
-        </Defs>
-        <AnimatedRect x={0} width={FRAME.width + M * 2} height={SLAB_H}
-          fill="url(#inkSlab)" animatedProps={inkProps} />
-        <AnimatedLine x1={0} x2={FRAME.width + M * 2} stroke="#8B7CF6"
-          strokeWidth={5} strokeLinecap="round" animatedProps={surfProps} />
-      </Svg>
-    </Animated.View>
-  );
-}
-
-/**
  * Beadwork, not thread: round dots along both rings. A zero-length dash on
  * a round-capped stroke renders each dash as a perfect circle, so the dot
  * ring is still one stroke and the march is still a dashoffset — same
@@ -2146,13 +2086,16 @@ function CometFx({ press, holdT, shift }: FxProps) {
   // through lilac to indigo. Adjacent segments overlap by 1pt, so they fuse
   // into a single continuous body with a smoothly dying tail — one object
   // revolving the border, not layered strokes chasing each other.
-  const segs = Array.from({ length: 9 }, (_, i) => ({
-    len: 15,
-    behind: i * 14,
-    width: 2.4 - i * 0.14,
-    opacity: (1 - i / 9) ** 1.6,
-    color: ['#F3F1FE', '#E7E3FD', '#CEC7FB', '#CEC7FB', '#A99BF5',
-            '#A99BF5', '#8B7CF6', '#8B7CF6', '#8B7CF6'][i],
+  // Twelve segments, 6pt of mutual overlap (len 18, step 12): each join is
+  // painted by two round caps at adjacent opacities, which is what finally
+  // fuses the strokes into one gradient body.
+  const segs = Array.from({ length: 12 }, (_, i) => ({
+    len: 18,
+    behind: i * 12,
+    width: 2.4 - i * 0.11,
+    opacity: (1 - i / 12) ** 1.8,
+    color: ['#F3F1FE', '#F3F1FE', '#E7E3FD', '#E7E3FD', '#CEC7FB', '#CEC7FB',
+            '#A99BF5', '#A99BF5', '#A99BF5', '#8B7CF6', '#8B7CF6', '#8B7CF6'][i],
   }));
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
