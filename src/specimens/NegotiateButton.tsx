@@ -89,7 +89,17 @@ export type NegotiateButtonVariant =
   | 'neon'
   | 'carve'
   | 'chrome'
-  | 'blueprint';
+  | 'blueprint'
+  | 'aurora'
+  | 'ripple'
+  | 'prism'
+  | 'hologram'
+  | 'starfield'
+  | 'filament'
+  | 'spotlight'
+  | 'inkwell'
+  | 'stitch'
+  | 'comet';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -162,6 +172,22 @@ type VariantSpec = {
   chromeBase?: boolean;
   /** Design-tool chrome (dashed border, handles) that fades as the press renders. */
   blueprintChrome?: boolean;
+  /**
+   * Bespoke effect layer, one renderer per kind (see VariantFx). Each
+   * receives the press, the hold clock and the tilt, and owns its whole
+   * look beyond the pill/glow/label basics.
+   */
+  fx?:
+    | 'aurora'
+    | 'ripple'
+    | 'prism'
+    | 'hologram'
+    | 'starfield'
+    | 'filament'
+    | 'spotlight'
+    | 'inkwell'
+    | 'stitch'
+    | 'comet';
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -425,6 +451,78 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     gradientBorder: true,
     concavePress: true,
     glow: { edge: 'bottom', color: theme.color.glow, rest: 0.5, lit: 0.5 },
+    label: { kind: 'gradient' },
+  },
+
+  /** Northern-light curtains drifting over a polar night. */
+  aurora: {
+    pill: { backgroundColor: '#070B1E', borderColor: 'rgba(140, 240, 210, 0.12)' },
+    fx: 'aurora',
+    label: { kind: 'solid', color: '#E7FBF2' },
+  },
+
+  /** neon's paradigm inverted: rings born at the centre, expanding out. */
+  ripple: {
+    pill: { backgroundColor: '#081226', borderColor: 'rgba(126, 180, 255, 0.16)' },
+    fx: 'ripple',
+    glow: { edge: 'center', color: '#4D8DFF', core: '#9EC4FF', rest: 0.25, lit: 0.4, spread: 2 },
+    label: { kind: 'solid', color: '#EAF3FF' },
+  },
+
+  /** Soap-film iridescence; the film's hues slide with the tilt. */
+  prism: {
+    pill: { backgroundColor: '#1A1428', borderColor: 'rgba(255, 255, 255, 0.25)' },
+    fx: 'prism',
+    label: { kind: 'solid', color: '#241636' },
+  },
+
+  /** A translucent projection: scanlines, chromatic edges, hold flicker. */
+  hologram: {
+    pill: { backgroundColor: 'rgba(126, 231, 224, 0.07)', borderWidth: 0 },
+    fx: 'hologram',
+    label: { kind: 'solid', color: '#DFFFFB' },
+  },
+
+  /** Three star layers at different tilt depths; press ignites a nebula. */
+  starfield: {
+    pill: { backgroundColor: '#05060F', borderColor: 'rgba(160, 170, 255, 0.1)' },
+    fx: 'starfield',
+    glow: { edge: 'center', color: '#6D5CF0', core: '#C8BFFF', rest: 0, lit: 0.55, spread: 2 },
+    label: { kind: 'solid', color: '#EDEBFF' },
+  },
+
+  /** An Edison wire that sags with gravity and overdrives on the hold. */
+  filament: {
+    pill: { backgroundColor: '#120C08', borderColor: 'rgba(255, 201, 138, 0.14)' },
+    fx: 'filament',
+    label: { kind: 'solid', color: '#FFE9CE' },
+  },
+
+  /** A beam that follows the tilt at high gain; pressing widens the cone. */
+  spotlight: {
+    pill: { backgroundColor: '#0A0A16', borderColor: 'rgba(255, 255, 255, 0.08)' },
+    fx: 'spotlight',
+    label: { kind: 'solid', color: '#F4F2E9' },
+  },
+
+  /** Press floods ink upward; the surface tips with the phone. */
+  inkwell: {
+    pill: { backgroundColor: '#101024', borderColor: 'rgba(170, 160, 255, 0.18)' },
+    fx: 'inkwell',
+    label: { kind: 'solid', color: '#F0EDFF' },
+  },
+
+  /** Felt and thread; the running stitch marches while held. */
+  stitch: {
+    pill: { backgroundColor: '#241E3A', borderWidth: 0 },
+    fx: 'stitch',
+    label: { kind: 'solid', color: '#E6DFFB' },
+  },
+
+  /** A comet parked on the rim; pressing sends it around the perimeter. */
+  comet: {
+    pill: { backgroundColor: '#0A0714', borderColor: 'rgba(150, 140, 220, 0.14)' },
+    fx: 'comet',
     label: { kind: 'gradient' },
   },
 
@@ -735,6 +833,9 @@ export function NegotiateButton({
           <Animated.View pointerEvents="none" style={[styles.litLayer, litStyle]}>
             <GlowWash config={EMBER_PRESS_BAND} lit shift={glowShift} />
           </Animated.View>
+        )}
+        {spec.fx && (
+          <VariantFx kind={spec.fx} press={press} holdT={holdT} shift={glowShift} />
         )}
         {spec.mesh && (
           <>
@@ -1670,6 +1771,368 @@ function MoltenRim() {
     </View>
   );
 }
+
+type FxProps = {
+  press: SharedValue<number>;
+  holdT: SharedValue<number>;
+  shift?: { x: SharedValue<number>; y: SharedValue<number> };
+};
+
+/** Router for the bespoke effect layers. One renderer per physics. */
+function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['fx']> }) {
+  switch (kind) {
+    case 'aurora': return <AuroraFx {...fxp} />;
+    case 'ripple': return <RippleFx {...fxp} />;
+    case 'prism': return <PrismFx {...fxp} />;
+    case 'hologram': return <HologramFx {...fxp} />;
+    case 'starfield': return <StarfieldFx {...fxp} />;
+    case 'filament': return <FilamentFx {...fxp} />;
+    case 'spotlight': return <SpotlightFx {...fxp} />;
+    case 'inkwell': return <InkwellFx {...fxp} />;
+    case 'stitch': return <StitchFx {...fxp} />;
+    case 'comet': return <CometFx {...fxp} />;
+  }
+}
+
+/** One aurora curtain: a soft vertical gradient band, drifting. */
+function AuroraCurtain({
+  x0, width, color, rate, phase, press, holdT, shift,
+}: FxProps & { x0: number; width: number; color: string; rate: number; phase: number }) {
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX:
+          (shift?.x.value ?? 0) * rate +
+          Math.sin((holdT.value + phase) * 2 * Math.PI) * 14 * press.value,
+      },
+    ],
+  }));
+  const id = `aur-${color.replace('#', '')}-${x0}`;
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <View pointerEvents="none" style={styles.glowLayer}>
+        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+          <Defs>
+            <SvgLinearGradient id={id} x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={color} stopOpacity={0} />
+              <Stop offset="0.5" stopColor={color} stopOpacity={0.4} />
+              <Stop offset="1" stopColor={color} stopOpacity={0} />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x={x0} y={-8} width={width} height={FRAME.height + 16}
+            fill={`url(#${id})`} />
+        </Svg>
+      </View>
+    </Animated.View>
+  );
+}
+
+function AuroraFx(fxp: FxProps) {
+  return (
+    <>
+      <AuroraCurtain {...fxp} x0={30} width={80} color="#43E6B0" rate={0.5} phase={0} />
+      <AuroraCurtain {...fxp} x0={110} width={100} color="#4FD1E8" rate={0.9} phase={0.33} />
+      <AuroraCurtain {...fxp} x0={180} width={70} color="#8B7CF6" rate={1.4} phase={0.66} />
+    </>
+  );
+}
+
+/** One outbound ripple ring. */
+function RippleRing({ index, press, holdT }: FxProps & { index: number }) {
+  const props = useAnimatedProps(() => {
+    const phase = (((holdT.value - index * 0.25) % 1) + 1) % 1;
+    const grow = Easing.out(Easing.quad)(phase);
+    const ry = 4 + grow * 29;
+    const rx = 8 + grow * 126;
+    return {
+      x: FRAME.width / 2 - rx,
+      y: FRAME.height / 2 - ry,
+      width: rx * 2,
+      height: ry * 2,
+      rx: Math.min(ry, rx),
+      strokeOpacity: press.value * 0.55 * (1 - grow),
+    };
+  });
+  return (
+    <AnimatedRect fill="none" stroke="#9EC4FF" strokeWidth={1.2}
+      animatedProps={props} />
+  );
+}
+
+function RippleFx(fxp: FxProps) {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {[0, 1, 2, 3].map((i) => (
+          <RippleRing key={i} index={i} {...fxp} />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+/** Soap-film hues on an oversized canvas, sliding with the tilt. */
+function PrismFx({ shift }: FxProps) {
+  const M = 90;
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (shift?.x.value ?? 0) * 1.8 },
+      { translateY: (shift?.y.value ?? 0) * 0.6 },
+    ],
+  }));
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+        style={{ position: 'absolute', left: -M, top: -M }}>
+        <Defs>
+          <SvgLinearGradient id="prismFilm" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#FF9AD5" stopOpacity={0.85} />
+            <Stop offset="0.28" stopColor="#B79AFF" stopOpacity={0.85} />
+            <Stop offset="0.55" stopColor="#7EE7E0" stopOpacity={0.85} />
+            <Stop offset="0.8" stopColor="#FFD9A0" stopOpacity={0.85} />
+            <Stop offset="1" stopColor="#FF9AD5" stopOpacity={0.85} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+          fill="url(#prismFilm)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Scanlines + chromatic double edge + high-frequency hold flicker. */
+function HologramFx({ press, holdT }: FxProps) {
+  const flicker = useAnimatedStyle(() => ({
+    opacity:
+      1 - press.value * 0.14 * (0.5 + 0.5 * Math.sin(holdT.value * 42 * Math.PI)),
+  }));
+  const lines: number[] = [];
+  for (let y = 3; y < FRAME.height; y += 4) lines.push(y);
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, flicker]}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {lines.map((y) => (
+          <Line key={y} x1={0} y1={y} x2={FRAME.width} y2={y}
+            stroke="#7EE7E0" strokeOpacity={0.07} strokeWidth={1} />
+        ))}
+        <Rect x={2.2} y={1.5} width={FRAME.width - 4.4} height={FRAME.height - 3}
+          rx={(FRAME.height - 3) / 2} fill="none" stroke="#7EE7E0"
+          strokeOpacity={0.75} strokeWidth={1} />
+        <Rect x={0.8} y={1.5} width={FRAME.width - 4.4} height={FRAME.height - 3}
+          rx={(FRAME.height - 3) / 2} fill="none" stroke="#B79AFF"
+          strokeOpacity={0.55} strokeWidth={1} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Deterministic golden-angle star scatter — no Math.random anywhere. */
+function starPoints(count: number, seed: number): [number, number, number][] {
+  const pts: [number, number, number][] = [];
+  for (let i = 1; i <= count; i++) {
+    const x = ((i * 61.8034 + seed * 47.9) % 1) * FRAME.width;
+    const y = ((i * 38.196 + seed * 29.3) % 1) * FRAME.height;
+    const r = 0.5 + ((i * 23.6068) % 1) * 0.9;
+    pts.push([x, y, r]);
+  }
+  return pts;
+}
+const STAR_LAYERS = [
+  { pts: starPoints(14, 1), rate: 0.2, opacity: 0.35 },
+  { pts: starPoints(11, 2), rate: 0.7, opacity: 0.55 },
+  { pts: starPoints(8, 3), rate: 1.5, opacity: 0.9 },
+];
+
+function StarLayer({
+  layer, shift,
+}: FxProps & { layer: (typeof STAR_LAYERS)[number] }) {
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (shift?.x.value ?? 0) * layer.rate },
+      { translateY: (shift?.y.value ?? 0) * layer.rate },
+    ],
+  }));
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {layer.pts.map(([x, y, r], i) => (
+          <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF"
+            fillOpacity={layer.opacity} />
+        ))}
+      </Svg>
+    </Animated.View>
+  );
+}
+
+function StarfieldFx(fxp: FxProps) {
+  return (
+    <>
+      {STAR_LAYERS.map((layer, i) => (
+        <StarLayer key={i} layer={layer} {...fxp} />
+      ))}
+    </>
+  );
+}
+
+/** The Edison wire: sags with gravity, overdrives while held. */
+function FilamentFx({ press, holdT, shift }: FxProps) {
+  const glowProps = useAnimatedProps(() => {
+    const sag = 34 + (shift?.y.value ?? 0) * 0.9;
+    const breath = 0.5 + 0.5 * Math.sin(holdT.value * 2 * Math.PI);
+    return {
+      d: `M 24 34 Q ${FRAME.width / 2} ${sag} ${FRAME.width - 24} 34`,
+      strokeOpacity: 0.25 + press.value * (0.3 + 0.25 * breath),
+    };
+  });
+  const wireProps = useAnimatedProps(() => {
+    const sag = 34 + (shift?.y.value ?? 0) * 0.9;
+    return {
+      d: `M 24 34 Q ${FRAME.width / 2} ${sag} ${FRAME.width - 24} 34`,
+      strokeOpacity: 0.55 + press.value * 0.45,
+    };
+  });
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <AnimatedPath animatedProps={glowProps} stroke="#FF9D45"
+          strokeWidth={7} strokeLinecap="round" fill="none" />
+        <AnimatedPath animatedProps={wireProps} stroke="#FFD9A8"
+          strokeWidth={1.6} strokeLinecap="round" fill="none" />
+      </Svg>
+    </View>
+  );
+}
+
+/** A warm beam chasing the tilt at high gain; press widens the cone. */
+function SpotlightFx({ press, shift }: FxProps) {
+  const M = 100;
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (shift?.x.value ?? 0) * 2.2 },
+      { translateY: (shift?.y.value ?? 0) * 1.4 },
+      { scale: 1 + press.value * 0.4 },
+    ],
+  }));
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+        style={{ position: 'absolute', left: -M, top: -M }}>
+        <Defs>
+          <RadialGradient id="spotBeam" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0" stopColor="#FFF4D6" stopOpacity={0.5} />
+            <Stop offset="0.4" stopColor="#FFEDC2" stopOpacity={0.18} />
+            <Stop offset="1" stopColor="#FFEDC2" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx={(FRAME.width + M * 2) / 2} cy={(FRAME.height + M * 2) / 2}
+          rx={95} ry={62} fill="url(#spotBeam)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Ink rising with the press; the surface tips with the phone. */
+function InkwellFx({ press, holdT, shift }: FxProps) {
+  const M = 60;
+  const style = useAnimatedStyle(() => {
+    const tip =
+      (shift?.x.value ?? 0) * -0.12 +
+      Math.sin(holdT.value * 2 * Math.PI) * 1.2 * press.value;
+    return { transform: [{ rotate: `${tip}deg` }] };
+  });
+  const inkProps = useAnimatedProps(() => {
+    const level = press.value * 46;
+    return { y: FRAME.height + M - level };
+  });
+  const surfProps = useAnimatedProps(() => {
+    const level = press.value * 46;
+    return {
+      y1: FRAME.height + M - level,
+      y2: FRAME.height + M - level,
+      strokeOpacity: press.value * 0.8,
+    };
+  });
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+        style={{ position: 'absolute', left: -M, top: -M }}>
+        <AnimatedRect x={0} width={FRAME.width + M * 2} height={FRAME.height + M}
+          fill="#2A1B70" fillOpacity={0.85} animatedProps={inkProps} />
+        <AnimatedLine x1={0} x2={FRAME.width + M * 2} stroke="#8B7CF6"
+          strokeWidth={1.5} animatedProps={surfProps} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Running stitch that marches while held. */
+function StitchFx({ press, holdT }: FxProps) {
+  const props = useAnimatedProps(() => ({
+    // Dash cycle is 9; 18 per loop keeps the march seamless.
+    strokeDashoffset: -holdT.value * 18 * press.value - 0,
+  }));
+  const h = FRAME.height - 12;
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <AnimatedRect x={6} y={6} width={FRAME.width - 12} height={h} rx={h / 2}
+          fill="none" stroke="#C9BFF5" strokeWidth={1.4}
+          strokeDasharray="5 4" animatedProps={props} />
+        <Rect x={11} y={11} width={FRAME.width - 22} height={FRAME.height - 22}
+          rx={(FRAME.height - 22) / 2} fill="none" stroke="#8F82C9"
+          strokeOpacity={0.4} strokeWidth={1} strokeDasharray="5 4" />
+      </Svg>
+    </View>
+  );
+}
+
+/** Comet: bright head, layered fading tail, orbiting the rim while held. */
+function CometFx({ press, holdT, shift }: FxProps) {
+  const inset = 2;
+  const w = FRAME.width - inset * 2;
+  const h = FRAME.height - inset * 2;
+  const r = h / 2;
+  // Perimeter of the stadium rim the comet rides.
+  const P = 2 * (w - 2 * r) + 2 * Math.PI * r;
+  const tails = [
+    { len: 26, width: 2.2, opacity: 1, color: '#FFFFFF' },
+    { len: 60, width: 1.6, opacity: 0.35, color: '#B7A8FF' },
+    { len: 110, width: 1.2, opacity: 0.14, color: '#8B7CF6' },
+  ];
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {tails.map((tail, i) => (
+          <CometTail key={i} {...{ inset, w, h, r, P }} tail={tail}
+            press={press} holdT={holdT} shift={shift} />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+function CometTail({
+  inset, w, h, r, P, tail, press, holdT, shift,
+}: FxProps & {
+  inset: number; w: number; h: number; r: number; P: number;
+  tail: { len: number; width: number; opacity: number; color: string };
+}) {
+  const props = useAnimatedProps(() => {
+    // Parked at the top-right arc at rest, nudged by roll; orbits on hold.
+    const park = P * 0.12 + (shift?.x.value ?? 0) * 0.6;
+    return {
+      strokeDashoffset: -(park + holdT.value * P * press.value),
+      strokeOpacity: tail.opacity * (0.5 + 0.5 * press.value),
+    };
+  });
+  return (
+    <AnimatedRect x={inset} y={inset} width={w} height={h} rx={r} fill="none"
+      stroke={tail.color} strokeWidth={tail.width}
+      strokeDasharray={`${tail.len} ${P - tail.len}`} animatedProps={props} />
+  );
+}
+
+const AnimatedLine = Animated.createAnimatedComponent(Line);
 
 /**
  * The liquid-UI halftone: a quiet dot grid over the pill, as on the

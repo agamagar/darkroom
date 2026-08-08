@@ -30,6 +30,16 @@ export const TYPES = [
   'carve',
   'chrome',
   'blueprint',
+  'aurora',
+  'ripple',
+  'prism',
+  'hologram',
+  'starfield',
+  'filament',
+  'spotlight',
+  'inkwell',
+  'stitch',
+  'comet',
 ] as const;
 export type Type = (typeof TYPES)[number];
 
