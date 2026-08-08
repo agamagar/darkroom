@@ -102,7 +102,8 @@ export type NegotiateButtonVariant =
   | 'glitch'
   | 'pixel'
   | 'stamp'
-  | 'ceramic';
+  | 'ceramic'
+  | 'hyperspace';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -191,7 +192,8 @@ type VariantSpec = {
     | 'glitch'
     | 'pixel'
     | 'stamp'
-    | 'ceramic';
+    | 'ceramic'
+    | 'hyperspace';
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -535,6 +537,13 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   ceramic: {
     pill: { backgroundColor: 'transparent', borderWidth: 0 },
     fx: 'ceramic',
+    label: { kind: 'solid', color: '#F3F1FE' },
+  },
+
+  /** Glazed stoneware that jumps to lightspeed when pressed. */
+  hyperspace: {
+    pill: { backgroundColor: 'transparent', borderWidth: 0 },
+    fx: 'hyperspace',
     label: { kind: 'solid', color: '#F3F1FE' },
   },
 
@@ -1844,6 +1853,7 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
     case 'pixel': return <PixelFx {...fxp} />;
     case 'stamp': return <StampFx {...fxp} />;
     case 'ceramic': return <CeramicFx {...fxp} />;
+    case 'hyperspace': return <HyperspaceFx {...fxp} />;
   }
 }
 
@@ -2546,6 +2556,60 @@ function CeramicFx(fxp: FxProps) {
         </Svg>
       </View>
       <CeramicSheen {...fxp} />
+    </>
+  );
+}
+
+/**
+ * Ceramic's rest crossed with starfield's press: a glazed vase that jumps
+ * to lightspeed. At rest it IS ceramic — same body, speckle, foot, sheen.
+ * Pressing dims the glaze a step and the jump streaks (starfield's rush
+ * machinery, but with no resting-dot phase of their own — the ceramic
+ * speckles play that role) tear outward over the surface, as if the glaze's
+ * flecks were stars all along.
+ */
+function HyperStar({
+  star, press, holdT,
+}: FxProps & { star: (typeof STARS)[number] }) {
+  const props = useAnimatedProps(() => {
+    const t = (holdT.value * 4 + star.phase) % 1;
+    const rush = Easing.in(Easing.quad)(t);
+    const out = rush * 150 * star.depth * press.value;
+    const streak = (3 + rush * 36 * star.depth) * press.value;
+    const hx = star.x + star.dx * out;
+    const hy = star.y + star.dy * out;
+    return {
+      x1: hx - star.dx * streak,
+      y1: hy - star.dy * streak,
+      x2: hx,
+      y2: hy,
+      // Rush-only: no resting dots — the glaze speckles are the stars.
+      strokeOpacity:
+        press.value * star.depth * Math.min(1, t / 0.12) * (1 - rush * 0.55),
+    };
+  });
+  return (
+    <AnimatedLine stroke="#F3F1FE" strokeWidth={star.r * 1.6}
+      strokeLinecap="round" animatedProps={props} />
+  );
+}
+
+function HyperspaceFx(fxp: FxProps) {
+  const dim = useAnimatedStyle(() => ({
+    opacity: 1 - fxp.press.value * 0.3,
+  }));
+  return (
+    <>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, dim]}>
+        <CeramicFx {...fxp} />
+      </Animated.View>
+      <View pointerEvents="none" style={styles.glowLayer}>
+        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+          {STARS.map((star, i) => (
+            <HyperStar key={i} star={star} {...fxp} />
+          ))}
+        </Svg>
+      </View>
     </>
   );
 }

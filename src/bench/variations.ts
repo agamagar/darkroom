@@ -39,6 +39,7 @@ export const TYPES = [
   'pixel',
   'stamp',
   'ceramic',
+  'hyperspace',
 ] as const;
 export type Type = (typeof TYPES)[number];
 
