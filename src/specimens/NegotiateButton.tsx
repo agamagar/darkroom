@@ -2071,22 +2071,28 @@ function InkwellFx({ press, holdT, shift }: FxProps) {
   );
 }
 
-/** Running stitch that marches while held. */
+/**
+ * Beadwork, not thread: round dots along both rings. A zero-length dash on
+ * a round-capped stroke renders each dash as a perfect circle, so the dot
+ * ring is still one stroke and the march is still a dashoffset — same
+ * machinery as before, dots instead of dashes.
+ */
 function StitchFx({ press, holdT }: FxProps) {
+  // Dot cycle is 8 (0-length dash + 8 gap); 16 per loop = seamless march.
   const props = useAnimatedProps(() => ({
-    // Dash cycle is 9; 18 per loop keeps the march seamless.
-    strokeDashoffset: -holdT.value * 18 * press.value - 0,
+    strokeDashoffset: -holdT.value * 16 * press.value,
   }));
   const h = FRAME.height - 12;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <AnimatedRect x={6} y={6} width={FRAME.width - 12} height={h} rx={h / 2}
-          fill="none" stroke="#C9BFF5" strokeWidth={1.4}
-          strokeDasharray="5 4" animatedProps={props} />
+          fill="none" stroke="#C9BFF5" strokeWidth={2.6} strokeLinecap="round"
+          strokeDasharray="0.1 8" animatedProps={props} />
         <Rect x={11} y={11} width={FRAME.width - 22} height={FRAME.height - 22}
           rx={(FRAME.height - 22) / 2} fill="none" stroke="#8F82C9"
-          strokeOpacity={0.4} strokeWidth={1} strokeDasharray="5 4" />
+          strokeOpacity={0.4} strokeWidth={1.8} strokeLinecap="round"
+          strokeDasharray="0.1 8" />
       </Svg>
     </View>
   );
