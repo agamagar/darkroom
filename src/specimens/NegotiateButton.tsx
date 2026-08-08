@@ -101,7 +101,8 @@ export type NegotiateButtonVariant =
   | 'comet'
   | 'glitch'
   | 'pixel'
-  | 'stamp';
+  | 'stamp'
+  | 'ceramic';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -189,7 +190,8 @@ type VariantSpec = {
     | 'comet'
     | 'glitch'
     | 'pixel'
-    | 'stamp';
+    | 'stamp'
+    | 'ceramic';
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -527,6 +529,13 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     pill: { backgroundColor: 'transparent', borderWidth: 0 },
     fx: 'stamp',
     label: { kind: 'solid', color: '#271D66' },
+  },
+
+  /** Glazed stoneware: speckled satin glaze over clay, fired in indigo. */
+  ceramic: {
+    pill: { backgroundColor: 'transparent', borderWidth: 0 },
+    fx: 'ceramic',
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /** Light under a door: the glow compressed into a hot band at the rim. */
@@ -1834,6 +1843,7 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
     case 'glitch': return <GlitchFx {...fxp} />;
     case 'pixel': return <PixelFx {...fxp} />;
     case 'stamp': return <StampFx {...fxp} />;
+    case 'ceramic': return <CeramicFx {...fxp} />;
   }
 }
 
@@ -2454,6 +2464,86 @@ function StampFx(fxp: FxProps) {
         <StampPostmark {...fxp} />
       </Svg>
     </View>
+  );
+}
+
+/**
+ * Glazed ceramic, from the reference's anatomy: a satin body (vertical
+ * ramp, never mirror-bright), a SPECKLED glaze — ninety R2-scattered flecks
+ * in the pale end of the palette, the signature of a real glaze firing — a
+ * broad soft specular bloom that drifts with the tilt the way a sheen
+ * tracks a light source, and the potter's tell: an unglazed clay foot
+ * peeking at the base. Pressing wets the glaze — the bloom tightens and
+ * brightens, gloss rising under the finger.
+ */
+const CERAMIC_SPECKLES = Array.from({ length: 90 }, (_, i) => ({
+  x: ((0.5 + (i + 1) * 0.7548776662) % 1) * (FRAME.width - 8) + 4,
+  y: ((0.5 + (i + 1) * 0.5698402909) % 1) * (FRAME.height - 8) + 4,
+  r: 0.4 + ((i * 23.6068) % 1) * 0.9,
+  o: 0.15 + ((i * 41.4214) % 1) * 0.45,
+  pale: i % 4 === 0,
+}));
+
+function CeramicSheen({ press, shift }: FxProps) {
+  const M = 60;
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (shift?.x.value ?? 0) * 1.2 },
+      { translateY: (shift?.y.value ?? 0) * 0.8 },
+      { scale: 1 - press.value * 0.18 },
+    ],
+    opacity: 0.75 + press.value * 0.25,
+  }));
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+        style={{ position: 'absolute', left: -M, top: -M }}>
+        <Defs>
+          <RadialGradient id="ceramicSheen" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0" stopColor="#F3F1FE" stopOpacity={0.34} />
+            <Stop offset="0.5" stopColor="#F3F1FE" stopOpacity={0.1} />
+            <Stop offset="1" stopColor="#F3F1FE" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx={M + 96} cy={M + 18} rx={92} ry={40}
+          fill="url(#ceramicSheen)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+function CeramicFx(fxp: FxProps) {
+  return (
+    <>
+      <View pointerEvents="none" style={styles.glowLayer}>
+        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+          <Defs>
+            <SvgLinearGradient id="ceramicBody" x1="0.5" y1="0" x2="0.5" y2="1">
+              <Stop offset="0" stopColor="#5847D6" />
+              <Stop offset="0.45" stopColor="#4636B8" />
+              <Stop offset="0.85" stopColor="#36298F" />
+              <Stop offset="1" stopColor="#271D66" />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect width={FRAME.width} height={FRAME.height} rx={FRAME.height / 2}
+            fill="url(#ceramicBody)" />
+          {/* The glaze speckle — mostly faint 200, one in four pale 50. */}
+          {CERAMIC_SPECKLES.map((sp, i) => (
+            <Circle key={i} cx={sp.x} cy={sp.y} r={sp.r}
+              fill={sp.pale ? '#F3F1FE' : '#CEC7FB'} fillOpacity={sp.o} />
+          ))}
+          {/* The unglazed foot: raw clay showing at the base. */}
+          <Rect x={30} y={62} width={FRAME.width - 60} height={2.6} rx={1.3}
+            fill="#CEC7FB" fillOpacity={0.32} />
+          {/* Edge definition, single hairline. */}
+          <Rect x={0.8} y={0.8} width={FRAME.width - 1.6}
+            height={FRAME.height - 1.6} rx={(FRAME.height - 1.6) / 2}
+            fill="none" stroke="#271D66" strokeOpacity={0.7}
+            strokeWidth={1.2} />
+        </Svg>
+      </View>
+      <CeramicSheen {...fxp} />
+    </>
   );
 }
 
