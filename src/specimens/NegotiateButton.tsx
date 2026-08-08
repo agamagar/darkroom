@@ -38,6 +38,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
+import { freeze } from '../freeze';
 import { theme } from '../theme';
 
 /**
@@ -617,7 +618,7 @@ export function NegotiateButton({
   // rather than just its existence.
   const touchX = useSharedValue(FRAME.width / 2);
   const touchY = useSharedValue(FRAME.height / 2);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotion() || freeze.current;
 
   /**
    * The hold clock — neon's paradigm, promoted system-wide. Press-in starts
@@ -631,6 +632,7 @@ export function NegotiateButton({
     () => press.value > 0.05,
     (active, prev) => {
       if (active === prev) return;
+      if (reducedMotion) return; // frozen or reduce-motion: clock stays 0
       if (active) {
         holdT.value = 0;
         holdT.value = withRepeat(
@@ -1293,7 +1295,7 @@ const AnimatedRadialGradient = Animated.createAnimatedComponent(RadialGradient);
  */
 function NegotiateGlyph({ kind = 'trend' }: { kind?: ArrowKind }) {
   const arrow = ARROWS[kind];
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotion() || freeze.current;
   const t = useSharedValue(0);
 
   useEffect(() => {
@@ -1453,7 +1455,7 @@ function NeonRing({
   const inset = 2;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotion() || freeze.current;
   // One clock drives all five rings; their stagger comes from phase offsets.
   // The PRESS owns the clock: press-in starts the loop from zero (echoes
   // are born at the tube, deterministically, instead of catching a free-

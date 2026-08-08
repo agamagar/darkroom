@@ -1,6 +1,7 @@
 import { useFonts } from 'expo-font';
+import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -28,11 +29,38 @@ import {
   propsFor,
   type Selection,
 } from './src/bench/variations';
+import { freeze } from './src/freeze';
 import { NegotiateButton } from './src/specimens/NegotiateButton';
 import { theme } from './src/theme';
 
 export default function App() {
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
+  // Golden-image drive: exp://.../--/?type=molten&state=pressed&chrome=off
+  // &freeze=1 steers the bench from a script. chrome=off drops the control
+  // pane entirely; freeze pins every self-running clock (src/freeze.ts).
+  const [chromeHidden, setChromeHidden] = useState(false);
+  const url = Linking.useURL();
+  useEffect(() => {
+    if (!url) return;
+    const { queryParams } = Linking.parse(url);
+    if (!queryParams) return;
+    const q = (k: string) =>
+      typeof queryParams[k] === 'string' ? (queryParams[k] as string) : undefined;
+    freeze.current = q('freeze') === '1';
+    setChromeHidden(q('chrome') === 'off');
+    setSelection((sel) => ({
+      ...sel,
+      ...(q('type') && (TYPES as readonly string[]).includes(q('type')!)
+        ? { type: q('type') as Selection['type'] }
+        : null),
+      ...(q('state') && (STATES as readonly string[]).includes(q('state')!)
+        ? { state: q('state') as Selection['state'] }
+        : null),
+      ...(q('screen') && (SCREENS as readonly string[]).includes(q('screen')!)
+        ? { screen: q('screen') as Selection['screen'] }
+        : null),
+    }));
+  }, [url]);
   const { width, height } = useWindowDimensions();
 
   // 1 = collapsed to the peeking handle strip (the handle toggles this).
@@ -54,10 +82,12 @@ export default function App() {
   // The stage cedes the pane's height while it is docked and reclaims it
   // when the pane tucks away — the split in the split view.
   const stageStyle = useAnimatedStyle(() => ({
-    paddingBottom: withTiming(
-      panelCollapsed.value === 1 ? PANEL_PEEK : PANEL_HEIGHT,
-      { duration: 260 },
-    ),
+    paddingBottom: chromeHidden
+      ? 0
+      : withTiming(
+          panelCollapsed.value === 1 ? PANEL_PEEK : PANEL_HEIGHT,
+          { duration: 260 },
+        ),
   }));
 
   const specimen = (
@@ -125,6 +155,7 @@ export default function App() {
         )}
         </Animated.View>
 
+      {chromeHidden ? null : (
       <BenchPanel collapsed={panelCollapsed}>
         <SegmentedRow
           label="State"
@@ -157,6 +188,7 @@ export default function App() {
           onChange={(gyro) => setSelection((s) => ({ ...s, gyro }))}
         />
       </BenchPanel>
+      )}
     </GestureHandlerRootView>
   );
 }

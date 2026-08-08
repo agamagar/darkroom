@@ -43,3 +43,4 @@ yarn-error.*
 # Native projects (regenerate with `npx expo prebuild`)
 /ios
 /android
+candidates/
