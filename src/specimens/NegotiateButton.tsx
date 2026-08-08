@@ -1896,27 +1896,51 @@ function PrismFx({ shift }: FxProps) {
   );
 }
 
-/** Scanlines + chromatic double edge + high-frequency hold flicker. */
+/**
+ * A projection with a refresh rate. Three motions while held, all off the
+ * hold clock: the scanlines CRAWL upward (one 4pt period every eighth of a
+ * cycle, seamless), the whole projection flickers hard at ~13Hz, and the
+ * chromatic edges split further apart with the press — plus a constant
+ * gentle shimmer even at rest so the surface never reads as printed.
+ */
 function HologramFx({ press, holdT }: FxProps) {
   const flicker = useAnimatedStyle(() => ({
     opacity:
-      1 - press.value * 0.14 * (0.5 + 0.5 * Math.sin(holdT.value * 42 * Math.PI)),
+      0.92 +
+      0.08 * Math.sin(holdT.value * 26 * Math.PI) -
+      press.value * 0.3 * (0.5 + 0.5 * Math.sin(holdT.value * 82 * Math.PI)),
+  }));
+  const crawl = useAnimatedStyle(() => ({
+    transform: [{ translateY: -((holdT.value * 8) % 1) * 4 }],
+  }));
+  const edgeSplit = useAnimatedProps(() => ({
+    x: 2.2 + press.value * 1.4,
+  }));
+  const edgeSplit2 = useAnimatedProps(() => ({
+    x: 0.8 - press.value * 1.4,
   }));
   const lines: number[] = [];
-  for (let y = 3; y < FRAME.height; y += 4) lines.push(y);
+  for (let y = -4; y < FRAME.height + 4; y += 4) lines.push(y);
   return (
     <Animated.View pointerEvents="none" style={[styles.litLayer, flicker]}>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, crawl]}>
+        <Svg width={FRAME.width} height={FRAME.height + 8}
+          style={styles.glowSvg}>
+          {lines.map((y) => (
+            <Line key={y} x1={0} y1={y + 4} x2={FRAME.width} y2={y + 4}
+              stroke="#7EE7E0" strokeOpacity={0.09} strokeWidth={1} />
+          ))}
+        </Svg>
+      </Animated.View>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {lines.map((y) => (
-          <Line key={y} x1={0} y1={y} x2={FRAME.width} y2={y}
-            stroke="#7EE7E0" strokeOpacity={0.07} strokeWidth={1} />
-        ))}
-        <Rect x={2.2} y={1.5} width={FRAME.width - 4.4} height={FRAME.height - 3}
-          rx={(FRAME.height - 3) / 2} fill="none" stroke="#7EE7E0"
-          strokeOpacity={0.75} strokeWidth={1} />
-        <Rect x={0.8} y={1.5} width={FRAME.width - 4.4} height={FRAME.height - 3}
-          rx={(FRAME.height - 3) / 2} fill="none" stroke="#B79AFF"
-          strokeOpacity={0.55} strokeWidth={1} />
+        <AnimatedRect y={1.5} width={FRAME.width - 4.4}
+          height={FRAME.height - 3} rx={(FRAME.height - 3) / 2} fill="none"
+          stroke="#7EE7E0" strokeOpacity={0.75} strokeWidth={1}
+          animatedProps={edgeSplit} />
+        <AnimatedRect y={1.5} width={FRAME.width - 4.4}
+          height={FRAME.height - 3} rx={(FRAME.height - 3) / 2} fill="none"
+          stroke="#B79AFF" strokeOpacity={0.55} strokeWidth={1}
+          animatedProps={edgeSplit2} />
       </Svg>
     </Animated.View>
   );
@@ -1940,9 +1964,11 @@ const STAR_LAYERS = [
 ];
 
 function StarLayer({
-  layer, shift,
+  layer, press, shift,
 }: FxProps & { layer: (typeof STAR_LAYERS)[number] }) {
   const style = useAnimatedStyle(() => ({
+    // The resting field: parallax on tilt, yielding to the jump on press.
+    opacity: 1 - press.value,
     transform: [
       { translateX: (shift?.x.value ?? 0) * layer.rate },
       { translateY: (shift?.y.value ?? 0) * layer.rate },
@@ -1960,12 +1986,70 @@ function StarLayer({
   );
 }
 
+/**
+ * The jump: each streak is a star rushing outward from the vanishing point
+ * at the pill's centre — head racing away, tail stretched toward where it
+ * came from. Four rushes per hold cycle (~800ms each), phase-staggered per
+ * star so the stream never gaps. Cockpit view, not a map: press = throttle.
+ */
+const STAR_STREAKS = (() => {
+  const cx = FRAME.width / 2;
+  const cy = FRAME.height / 2;
+  const streaks: { dx: number; dy: number; r0: number; phase: number; depth: number }[] = [];
+  starPoints(22, 5).forEach(([x, y], i) => {
+    let dx = x - cx;
+    let dy = y - cy;
+    const len = Math.max(12, Math.hypot(dx, dy));
+    dx /= len; dy /= len;
+    streaks.push({
+      dx, dy,
+      r0: 6 + ((i * 17.9) % 1) * 30,
+      phase: (i * 0.618034) % 1,
+      depth: 0.6 + ((i * 41.4) % 1) * 0.8,
+    });
+  });
+  return streaks;
+})();
+
+function StarStreak({
+  streak, press, holdT,
+}: FxProps & { streak: (typeof STAR_STREAKS)[number] }) {
+  const props = useAnimatedProps(() => {
+    const t = (holdT.value * 4 + streak.phase) % 1;
+    const rush = Easing.in(Easing.quad)(t);
+    const r = streak.r0 + rush * 150 * streak.depth;
+    const streakLen = (4 + rush * 34 * streak.depth) * press.value;
+    const hx = FRAME.width / 2 + streak.dx * r;
+    const hy = FRAME.height / 2 + streak.dy * r;
+    return {
+      x1: hx - streak.dx * streakLen,
+      y1: hy - streak.dy * streakLen,
+      x2: hx,
+      y2: hy,
+      // Born dim, brightest mid-rush, gone as it leaves the hull.
+      strokeOpacity:
+        press.value * streak.depth * Math.min(1, t / 0.15) * (1 - rush * 0.6),
+    };
+  });
+  return (
+    <AnimatedLine stroke="#EDEBFF" strokeWidth={1.1} strokeLinecap="round"
+      animatedProps={props} />
+  );
+}
+
 function StarfieldFx(fxp: FxProps) {
   return (
     <>
       {STAR_LAYERS.map((layer, i) => (
         <StarLayer key={i} layer={layer} {...fxp} />
       ))}
+      <View pointerEvents="none" style={styles.glowLayer}>
+        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+          {STAR_STREAKS.map((streak, i) => (
+            <StarStreak key={i} streak={streak} {...fxp} />
+          ))}
+        </Svg>
+      </View>
     </>
   );
 }
