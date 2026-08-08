@@ -202,7 +202,7 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   /** The port of node 31:293, untouched. */
   gradient: {
     pill: {
-      backgroundColor: theme.color.primary950,
+      backgroundColor: '#181140',
       boxShadow: `inset 0px -16px 40px 0px ${theme.color.glow}`,
     },
     glow: { edge: 'bottom', color: theme.color.glow, rest: 0.55, lit: 0.95 },
@@ -239,18 +239,18 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   beacon: {
     pill: {
       backgroundColor: theme.color.indigo500,
-      borderColor: 'rgba(255, 255, 255, 0.18)',
+      borderColor: 'rgba(243, 241, 254, 0.18)',
       boxShadow: `0px 10px 44px 0px rgba(109, 92, 240, 0.55)`,
     },
     // Pressing floods the face with the lighter indigo from below.
     glow: { edge: 'bottom', color: theme.color.indigo400, rest: 0.35, lit: 0.9 },
-    label: { kind: 'solid', color: theme.color.primary950 },
+    label: { kind: 'solid', color: '#181140' },
   },
 
   /** The gradient flipped: lit from above, bottom in shadow. The dark room. */
   eclipse: {
     pill: {
-      backgroundColor: theme.color.primary950,
+      backgroundColor: '#181140',
       boxShadow: `inset 0px 16px 40px 0px ${theme.color.glow}`,
     },
     glow: { edge: 'top', color: theme.color.glow, rest: 0.45, lit: 0.9 },
@@ -264,10 +264,10 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   molten: {
     pill: {
-      backgroundColor: theme.color.primary950,
+      backgroundColor: '#181140',
       // Sharper vessel: a crisp 1pt lilac rim instead of the soft hairline.
       borderWidth: 1,
-      borderColor: 'rgba(214, 204, 255, 0.32)',
+      borderColor: 'rgba(206, 199, 251, 0.32)',
       boxShadow: `inset 0px 0px 22px 0px rgba(109, 92, 240, 0.55), 0px 4px 32px 0px rgba(109, 92, 240, 0.28)`,
     },
     emberPress: true,
@@ -284,20 +284,20 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       spread: 1.9,
     },
     mesh: true,
-    label: { kind: 'solid', color: '#F5F0EC' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /**
    * Port of node 48:12304 ("Negotiate", Portfolio file): deep-violet radial
    * base fading to black at the rim, glow off the bottom edge, an inset
-   * throw from the bottom-RIGHT (#3E01C8), a 1.5pt gradient stroke (see
+   * throw from the bottom-RIGHT (#5847D6), a 1.5pt gradient stroke (see
    * gradientBorder), and the negotiate glyph that draws itself on a 2s loop.
    */
   drawn: {
     pill: {
       backgroundColor: 'transparent',
       borderWidth: 0,
-      boxShadow: 'inset -8px -16px 40px 0px #3E01C8',
+      boxShadow: 'inset -8px -16px 40px 0px #5847D6',
     },
     violetBase: true,
     drawIcon: true,
@@ -309,13 +309,13 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   /**
    * Port of node 51:92 ("Concave button"), the one design that already has a
    * pressed variant. At rest: primary/950 lit from the top edge by an inset
-   * #4D00FF throw. Pressed: a dish appears — a radial that is DARKEST at its
-   * centre (#181140) and brightest at the rim (#3E2CA6), so the face reads
+   * #5847D6 throw. Pressed: a dish appears — a radial that is DARKEST at its
+   * centre (#181140) and brightest at the rim (#4636B8), so the face reads
    * pushed in. The press does not brighten this button, it hollows it.
    */
   concave: {
     pill: {
-      backgroundColor: theme.color.primary950,
+      backgroundColor: '#181140',
       borderWidth: 0,
     },
     insetThrow: true,
@@ -325,7 +325,7 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       // 14px here, not the 16 of node 31:293; the sheen is a white band with
       // one grey notch at 66%, angled 114.6deg.
       fontSize: 14,
-      colors: ['#FFFFFF', '#FFFFFF', '#DBDBDB', '#FFFFFF'],
+      colors: ['#F3F1FE', '#F3F1FE', '#CEC7FB', '#F3F1FE'],
       locations: [0.479, 0.623, 0.662, 0.698],
       // CSS 114.612deg -> pixel direction (0.909, 0.416). Converted to
       // normalised box coords for the label's own ~105x17 box, with CSS's
@@ -344,22 +344,22 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   safelight: {
     pill: {
-      backgroundColor: '#140302',
-      borderColor: 'rgba(255, 90, 60, 0.14)',
+      backgroundColor: '#181140',
+      borderColor: 'rgba(169, 155, 245, 0.14)',
       // The lamp hangs ABOVE the bench, as it does in a real darkroom.
-      boxShadow: 'inset 0px 14px 36px 0px rgba(214, 40, 24, 0.5)',
+      boxShadow: 'inset 0px 14px 36px 0px rgba(109, 92, 240, 0.5)',
     },
     glow: {
       edge: 'top',
-      color: '#D62818',
-      core: '#FF7A50',
+      color: '#6D5CF0',
+      core: '#A99BF5',
       rest: 0.5,
       lit: 0.5,
       squash: 0.75,
       spread: 1.3,
     },
     developLabel: true,
-    label: { kind: 'solid', color: '#FFF3EE' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /**
@@ -368,12 +368,12 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   neon: {
     pill: {
-      backgroundColor: 'rgba(15, 6, 32, 0.35)',
+      backgroundColor: 'rgba(24, 17, 64, 0.35)',
       borderWidth: 0,
       boxShadow: '0px 0px 28px 0px rgba(109, 92, 240, 0.4)',
     },
     neonRing: true,
-    label: { kind: 'solid', color: '#F5F0FF' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /**
@@ -386,21 +386,21 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       // Lilac clay, lit: the surface carries the house hue and now also an
       // ambient sheen (the centre glow below) that drifts with the gyro's
       // focal shift — soft daylight moving over a matte object, not a lamp.
-      backgroundColor: '#5C4EA0',
-      borderColor: 'rgba(222, 213, 255, 0.2)',
+      backgroundColor: '#4636B8',
+      borderColor: 'rgba(206, 199, 251, 0.2)',
       boxShadow:
-        '-6px -8px 22px 0px rgba(214, 203, 255, 0.32), 8px 10px 24px 0px rgba(10, 4, 28, 0.6)',
+        '-6px -8px 22px 0px rgba(206, 199, 251, 0.32), 8px 10px 24px 0px rgba(24, 17, 64, 0.6)',
     },
     glow: {
       edge: 'center',
-      color: '#C4B5FD',
-      core: '#F1EBFF',
+      color: '#CEC7FB',
+      core: '#F3F1FE',
       rest: 0.52,
       lit: 0.66,
       spread: 2.2,
     },
     carveInset: true,
-    label: { kind: 'solid', color: '#F6F2FF' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /**
@@ -410,12 +410,12 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
    */
   chrome: {
     pill: {
-      backgroundColor: '#7450DB',
+      backgroundColor: '#5847D6',
       borderColor: 'rgba(228, 212, 255, 0.45)',
-      boxShadow: '0px 6px 24px 0px rgba(20, 8, 50, 0.55)',
+      boxShadow: '0px 6px 24px 0px rgba(24, 17, 64, 0.55)',
     },
     chromeBase: true,
-    label: { kind: 'solid', color: '#FFFFFF' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /**
@@ -444,7 +444,7 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     pill: {
       backgroundColor: 'transparent',
       borderWidth: 0,
-      boxShadow: 'inset -8px -16px 40px 0px #3E01C8',
+      boxShadow: 'inset -8px -16px 40px 0px #5847D6',
     },
     violetBase: true,
     drawIcon: true,
@@ -456,65 +456,65 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
 
   /** Northern-light curtains drifting over a polar night. */
   aurora: {
-    pill: { backgroundColor: '#070B1E', borderColor: 'rgba(140, 240, 210, 0.12)' },
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.12)' },
     fx: 'aurora',
-    label: { kind: 'solid', color: '#E7FBF2' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /** neon's paradigm inverted: rings born at the centre, expanding out. */
   ripple: {
-    pill: { backgroundColor: '#081226', borderColor: 'rgba(126, 180, 255, 0.16)' },
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.16)' },
     fx: 'ripple',
-    glow: { edge: 'center', color: '#4D8DFF', core: '#9EC4FF', rest: 0.25, lit: 0.4, spread: 2 },
-    label: { kind: 'solid', color: '#EAF3FF' },
+    glow: { edge: 'center', color: '#6D5CF0', core: '#CEC7FB', rest: 0.25, lit: 0.4, spread: 2 },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /** Soap-film iridescence; the film's hues slide with the tilt. */
   prism: {
-    pill: { backgroundColor: '#1A1428', borderColor: 'rgba(255, 255, 255, 0.25)' },
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(243, 241, 254, 0.25)' },
     fx: 'prism',
-    label: { kind: 'solid', color: '#241636' },
+    label: { kind: 'solid', color: '#181140' },
   },
 
   /** A translucent projection: scanlines, chromatic edges, hold flicker. */
   hologram: {
-    pill: { backgroundColor: 'rgba(126, 231, 224, 0.07)', borderWidth: 0 },
+    pill: { backgroundColor: 'rgba(169, 155, 245, 0.07)', borderWidth: 0 },
     fx: 'hologram',
-    label: { kind: 'solid', color: '#DFFFFB' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /** Three star layers at different tilt depths; press ignites a nebula. */
   starfield: {
-    pill: { backgroundColor: '#05060F', borderColor: 'rgba(160, 170, 255, 0.1)' },
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.1)' },
     fx: 'starfield',
-    glow: { edge: 'center', color: '#6D5CF0', core: '#C8BFFF', rest: 0, lit: 0.55, spread: 2 },
-    label: { kind: 'solid', color: '#EDEBFF' },
+    glow: { edge: 'center', color: '#6D5CF0', core: '#CEC7FB', rest: 0, lit: 0.55, spread: 2 },
+    label: { kind: 'solid', color: '#E7E3FD' },
   },
 
   /** A lilac beam that follows the tilt at high gain; pressing widens it. */
   spotlight: {
-    pill: { backgroundColor: '#0B0918', borderColor: 'rgba(196, 181, 253, 0.1)' },
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(206, 199, 251, 0.1)' },
     fx: 'spotlight',
-    label: { kind: 'solid', color: '#F3EFFF' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /** Press floods ink upward; the surface tips with the phone. */
   inkwell: {
-    pill: { backgroundColor: '#101024', borderColor: 'rgba(170, 160, 255, 0.18)' },
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.18)' },
     fx: 'inkwell',
-    label: { kind: 'solid', color: '#F0EDFF' },
+    label: { kind: 'solid', color: '#F3F1FE' },
   },
 
   /** Felt and thread; the running stitch marches while held. */
   stitch: {
-    pill: { backgroundColor: '#241E3A', borderWidth: 0 },
+    pill: { backgroundColor: '#271D66', borderWidth: 0 },
     fx: 'stitch',
-    label: { kind: 'solid', color: '#E6DFFB' },
+    label: { kind: 'solid', color: '#E7E3FD' },
   },
 
   /** A comet parked on the rim; pressing sends it around the perimeter. */
   comet: {
-    pill: { backgroundColor: '#0A0714', borderColor: 'rgba(150, 140, 220, 0.14)' },
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.14)' },
     fx: 'comet',
     label: { kind: 'gradient' },
   },
@@ -522,7 +522,7 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   /** Light under a door: the glow compressed into a hot band at the rim. */
   ember: {
     pill: {
-      backgroundColor: theme.color.primary950,
+      backgroundColor: '#181140',
       boxShadow: `inset 0px -10px 18px 0px ${theme.color.glow}`,
     },
     glow: {
@@ -848,7 +848,7 @@ export function NegotiateButton({
             <Animated.View
               pointerEvents="none"
               style={[StyleSheet.absoluteFill, developTintStyle]}>
-              <ButtonLabel spec={{ kind: 'solid', color: '#D96A55' }}>
+              <ButtonLabel spec={{ kind: 'solid', color: '#8B7CF6' }}>
                 {label}
               </ButtonLabel>
             </Animated.View>
@@ -973,7 +973,7 @@ function GlowWash({
 }
 
 /**
- * Node 48:12304's base fill: a radial from #200363 at (0.5, 0.594) out
+ * Node 48:12304's base fill: a radial from #271D66 at (0.5, 0.594) out
  * through ever-darker violets to black. Figma bakes it as an inline SVG;
  * the stops and centre are lifted from that markup, radii scaled from the
  * node's 212x72 to the pill's 272x68.
@@ -990,12 +990,12 @@ function VioletBase() {
             cy={40.4}
             rx={110}
             ry={27.6}>
-            <Stop offset="0" stopColor="#200363" />
-            <Stop offset="0.25" stopColor="#18024A" />
-            <Stop offset="0.5" stopColor="#100131" />
-            <Stop offset="0.75" stopColor="#080119" />
-            <Stop offset="0.875" stopColor="#04000C" />
-            <Stop offset="1" stopColor="#000000" />
+            <Stop offset="0" stopColor="#271D66" />
+            <Stop offset="0.25" stopColor="#181140" />
+            <Stop offset="0.5" stopColor="#181140" />
+            <Stop offset="0.75" stopColor="#181140" />
+            <Stop offset="0.875" stopColor="#181140" />
+            <Stop offset="1" stopColor="#181140" />
           </RadialGradient>
         </Defs>
         <Rect width={FRAME.width} height={FRAME.height} fill="url(#violetBase)" />
@@ -1038,7 +1038,7 @@ function GradientBorderRing() {
               <Stop
                 key={offset}
                 offset={offset}
-                stopColor="#FFFFFF"
+                stopColor="#F3F1FE"
                 stopOpacity={alpha}
               />
             ))}
@@ -1060,11 +1060,10 @@ function GradientBorderRing() {
 }
 
 /**
- * Node 51:92's `inset 0 8px 36px #4D00FF`, rebuilt as a vertical gradient.
- *
- * The stops are not invented — they are the pixel-diff measurements, each
- * sampled alpha solved from observed = a*#4D00FF + (1-a)*#0F0620 down the
- * centreline. Reproducing the shadow this way costs nothing visually and
+ * Node 51:92's inset throw, rebuilt as a vertical gradient. The alpha
+ * profile is the pixel-diff measurement (solved against the original
+ * #4D00FF over #0F0620 render); the colours were later remapped onto the
+ * indigo palette (#5847D6 over #181140), keeping the measured profile. Reproducing the shadow this way costs nothing visually and
  * buys the one thing a CSS shadow string cannot do: respond to tilt.
  *
  * Tilt rotates the throw axis rather than sliding it, so the lit band stays
@@ -1122,7 +1121,7 @@ function InsetThrow({
               <Stop
                 key={offset}
                 offset={offset}
-                stopColor="#4D00FF"
+                stopColor="#5847D6"
                 stopOpacity={alpha}
               />
             ))}
@@ -1165,14 +1164,14 @@ function ConcaveDish() {
             {/* The measured four stops, resampled to nine with smoothstep
                 between them — same endpoints, no visible banding. */}
             <Stop offset="0" stopColor="#181140" />
-            <Stop offset="0.125" stopColor="#1D144D" />
-            <Stop offset="0.25" stopColor="#22185A" />
-            <Stop offset="0.375" stopColor="#261C66" />
-            <Stop offset="0.5" stopColor="#2B1F73" />
-            <Stop offset="0.625" stopColor="#302285" />
-            <Stop offset="0.75" stopColor="#352596" />
-            <Stop offset="0.875" stopColor="#39289E" />
-            <Stop offset="1" stopColor="#3E2CA6" />
+            <Stop offset="0.125" stopColor="#1F1753" />
+            <Stop offset="0.25" stopColor="#271D66" />
+            <Stop offset="0.375" stopColor="#2E2378" />
+            <Stop offset="0.5" stopColor="#36298F" />
+            <Stop offset="0.625" stopColor="#36298F" />
+            <Stop offset="0.75" stopColor="#3E2FA3" />
+            <Stop offset="0.875" stopColor="#4636B8" />
+            <Stop offset="1" stopColor="#4636B8" />
           </RadialGradient>
         </Defs>
         <Rect
@@ -1199,7 +1198,7 @@ function ConcaveDish() {
             height={h + grow * 2}
             rx={(h + grow * 2) / 2}
             fill="none"
-            stroke="#3E2CA6"
+            stroke="#4636B8"
             strokeOpacity={opacity}
             strokeWidth={width}
           />
@@ -1297,7 +1296,7 @@ function NegotiateGlyph({ kind = 'trend' }: { kind?: ArrowKind }) {
         style={[styles.glyphPart, { left: arrow.trail.x, top: arrow.trail.y }]}>
         <AnimatedPath
           d={arrow.trail.d}
-          stroke="#FFFFFF"
+          stroke="#F3F1FE"
           strokeWidth={1.3}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -1318,7 +1317,7 @@ function NegotiateGlyph({ kind = 'trend' }: { kind?: ArrowKind }) {
           viewBox={`0 0 ${arrow.head.w} ${arrow.head.h}`}>
           <Path
             d={arrow.head.d}
-            stroke="#FFFFFF"
+            stroke="#F3F1FE"
             strokeWidth={1.3}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -1395,7 +1394,7 @@ function NeonEchoRing({
       x={inset}
       width={w}
       fill="none"
-      stroke={index === 0 ? '#FFFFFF' : '#D8CFFF'}
+      stroke={index === 0 ? '#F3F1FE' : '#CEC7FB'}
       strokeWidth={width}
       animatedProps={props}
     />
@@ -1453,7 +1452,7 @@ function NeonRing({
           ))
         ) : (
           <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
-            stroke="#D8CFFF" strokeOpacity={0.9} strokeWidth={1.6} />
+            stroke="#CEC7FB" strokeOpacity={0.9} strokeWidth={1.6} />
         )}
       </Svg>
     </View>
@@ -1467,10 +1466,10 @@ function CarveInset() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="carveIn" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#0A041C" stopOpacity={0.55} />
-            <Stop offset="0.4" stopColor="#0A041C" stopOpacity={0.12} />
-            <Stop offset="0.8" stopColor="#0A041C" stopOpacity={0} />
-            <Stop offset="1" stopColor="#C4B5FD" stopOpacity={0.12} />
+            <Stop offset="0" stopColor="#181140" stopOpacity={0.55} />
+            <Stop offset="0.4" stopColor="#181140" stopOpacity={0.12} />
+            <Stop offset="0.8" stopColor="#181140" stopOpacity={0} />
+            <Stop offset="1" stopColor="#CEC7FB" stopOpacity={0.12} />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width} height={FRAME.height} fill="url(#carveIn)" />
@@ -1496,11 +1495,11 @@ function ChromeBase() {
         style={{ position: 'absolute', left: -M, top: -M }}>
         <Defs>
           <SvgLinearGradient id="chromeBands" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#BE9AFF" />
-            <Stop offset="0.42" stopColor="#7E52F5" />
-            <Stop offset="0.5" stopColor="#371E70" />
-            <Stop offset="0.62" stopColor="#6A44E0" />
-            <Stop offset="1" stopColor="#A87BFF" />
+            <Stop offset="0" stopColor="#A99BF5" />
+            <Stop offset="0.42" stopColor="#6D5CF0" />
+            <Stop offset="0.5" stopColor="#36298F" />
+            <Stop offset="0.62" stopColor="#5847D6" />
+            <Stop offset="1" stopColor="#A99BF5" />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
@@ -1531,11 +1530,11 @@ function ChromeSheen() {
               bright streak keeps its ~50pt physical width on the wider
               gradient line. */}
           <SvgLinearGradient id="chromeSheen" x1="0" y1="0.5" x2="1" y2="0.5">
-            <Stop offset="0" stopColor="#F4EDFF" stopOpacity={0} />
-            <Stop offset="0.472" stopColor="#F4EDFF" stopOpacity={0.1} />
-            <Stop offset="0.5" stopColor="#F4EDFF" stopOpacity={0.72} />
-            <Stop offset="0.528" stopColor="#F4EDFF" stopOpacity={0.1} />
-            <Stop offset="1" stopColor="#F4EDFF" stopOpacity={0} />
+            <Stop offset="0" stopColor="#F3F1FE" stopOpacity={0} />
+            <Stop offset="0.472" stopColor="#F3F1FE" stopOpacity={0.1} />
+            <Stop offset="0.5" stopColor="#F3F1FE" stopOpacity={0.72} />
+            <Stop offset="0.528" stopColor="#F3F1FE" stopOpacity={0.1} />
+            <Stop offset="1" stopColor="#F3F1FE" stopOpacity={0} />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
@@ -1583,7 +1582,7 @@ function BlueprintStaticRing({
   }));
   return (
     <AnimatedEllipse cx={x} cy={BP_CY} ry={ry} rx={Math.max(2, ry * 0.3)}
-      fill="none" stroke="#7FB8FF" strokeWidth={0.8} animatedProps={props} />
+      fill="none" stroke="#A99BF5" strokeWidth={0.8} animatedProps={props} />
   );
 }
 
@@ -1619,7 +1618,7 @@ function BlueprintFlowRing({
     };
   });
   return (
-    <AnimatedEllipse cy={BP_CY} fill="none" stroke="#7FB8FF"
+    <AnimatedEllipse cy={BP_CY} fill="none" stroke="#A99BF5"
       strokeWidth={0.8} animatedProps={props} />
   );
 }
@@ -1633,7 +1632,7 @@ function BlueprintChrome({
   press: SharedValue<number>;
   holdT: SharedValue<number>;
 }) {
-  const c = '#7FB8FF';
+  const c = '#A99BF5';
   const inset = 1.5;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
@@ -1708,7 +1707,7 @@ function BlueprintChrome({
         <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
           {handles.map(([hx, hy]) => (
             <Rect key={`${hx}-${hy}`} x={hx - 3} y={hy - 3} width={6} height={6}
-              fill={theme.color.bg} stroke={c} strokeWidth={1} />
+              fill={'#181140'} stroke={c} strokeWidth={1} />
           ))}
         </Svg>
       </Animated.View>
@@ -1736,7 +1735,7 @@ function MoltenSpark() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <RadialGradient id="moltenSpark" cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0" stopColor="#F2ECFF" stopOpacity={0.32} />
+            <Stop offset="0" stopColor="#F3F1FE" stopOpacity={0.32} />
             <Stop offset="0.45" stopColor={theme.color.indigo400} stopOpacity={0.2} />
             <Stop offset="1" stopColor={theme.color.indigo400} stopOpacity={0} />
           </RadialGradient>
@@ -1758,8 +1757,8 @@ function MoltenRim() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <SvgLinearGradient id="moltenRim" x1="0.5" y1="0" x2="0.5" y2="1">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.28} />
-            <Stop offset="0.35" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="0" stopColor="#F3F1FE" stopOpacity={0.28} />
+            <Stop offset="0.35" stopColor="#F3F1FE" stopOpacity={0} />
           </SvgLinearGradient>
         </Defs>
         <Rect x={inset} y={inset} width={FRAME.width - inset * 2} height={h}
@@ -1826,8 +1825,8 @@ function AuroraCurtain({
 function AuroraFx(fxp: FxProps) {
   return (
     <>
-      <AuroraCurtain {...fxp} x0={30} width={80} color="#43E6B0" rate={0.5} phase={0} />
-      <AuroraCurtain {...fxp} x0={110} width={100} color="#4FD1E8" rate={0.9} phase={0.33} />
+      <AuroraCurtain {...fxp} x0={30} width={80} color="#CEC7FB" rate={0.5} phase={0} />
+      <AuroraCurtain {...fxp} x0={110} width={100} color="#8B7CF6" rate={0.9} phase={0.33} />
       <AuroraCurtain {...fxp} x0={180} width={70} color="#8B7CF6" rate={1.4} phase={0.66} />
     </>
   );
@@ -1850,7 +1849,7 @@ function RippleRing({ index, press, holdT }: FxProps & { index: number }) {
     };
   });
   return (
-    <AnimatedRect fill="none" stroke="#9EC4FF" strokeWidth={1.2}
+    <AnimatedRect fill="none" stroke="#CEC7FB" strokeWidth={1.2}
       animatedProps={props} />
   );
 }
@@ -1882,11 +1881,11 @@ function PrismFx({ shift }: FxProps) {
         style={{ position: 'absolute', left: -M, top: -M }}>
         <Defs>
           <SvgLinearGradient id="prismFilm" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#FF9AD5" stopOpacity={0.85} />
-            <Stop offset="0.28" stopColor="#B79AFF" stopOpacity={0.85} />
-            <Stop offset="0.55" stopColor="#7EE7E0" stopOpacity={0.85} />
-            <Stop offset="0.8" stopColor="#FFD9A0" stopOpacity={0.85} />
-            <Stop offset="1" stopColor="#FF9AD5" stopOpacity={0.85} />
+            <Stop offset="0" stopColor="#CEC7FB" stopOpacity={0.85} />
+            <Stop offset="0.28" stopColor="#6D5CF0" stopOpacity={0.85} />
+            <Stop offset="0.55" stopColor="#A99BF5" stopOpacity={0.85} />
+            <Stop offset="0.8" stopColor="#E7E3FD" stopOpacity={0.85} />
+            <Stop offset="1" stopColor="#CEC7FB" stopOpacity={0.85} />
           </SvgLinearGradient>
         </Defs>
         <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
@@ -1928,18 +1927,18 @@ function HologramFx({ press, holdT }: FxProps) {
           style={styles.glowSvg}>
           {lines.map((y) => (
             <Line key={y} x1={0} y1={y + 4} x2={FRAME.width} y2={y + 4}
-              stroke="#7EE7E0" strokeOpacity={0.09} strokeWidth={1} />
+              stroke="#A99BF5" strokeOpacity={0.09} strokeWidth={1} />
           ))}
         </Svg>
       </Animated.View>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <AnimatedRect y={1.5} width={FRAME.width - 4.4}
           height={FRAME.height - 3} rx={(FRAME.height - 3) / 2} fill="none"
-          stroke="#7EE7E0" strokeOpacity={0.75} strokeWidth={1}
+          stroke="#A99BF5" strokeOpacity={0.75} strokeWidth={1}
           animatedProps={edgeSplit} />
         <AnimatedRect y={1.5} width={FRAME.width - 4.4}
           height={FRAME.height - 3} rx={(FRAME.height - 3) / 2} fill="none"
-          stroke="#B79AFF" strokeOpacity={0.55} strokeWidth={1}
+          stroke="#6D5CF0" strokeOpacity={0.55} strokeWidth={1}
           animatedProps={edgeSplit2} />
       </Svg>
     </Animated.View>
@@ -1978,7 +1977,7 @@ function StarLayer({
     <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         {layer.pts.map(([x, y, r], i) => (
-          <Circle key={i} cx={x} cy={y} r={r} fill="#FFFFFF"
+          <Circle key={i} cx={x} cy={y} r={r} fill="#F3F1FE"
             fillOpacity={layer.opacity} />
         ))}
       </Svg>
@@ -2032,7 +2031,7 @@ function StarStreak({
     };
   });
   return (
-    <AnimatedLine stroke="#EDEBFF" strokeWidth={1.1} strokeLinecap="round"
+    <AnimatedLine stroke="#E7E3FD" strokeWidth={1.1} strokeLinecap="round"
       animatedProps={props} />
   );
 }
@@ -2070,9 +2069,9 @@ function SpotlightFx({ press, shift }: FxProps) {
         style={{ position: 'absolute', left: -M, top: -M }}>
         <Defs>
           <RadialGradient id="spotBeam" cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0" stopColor="#EFE9FF" stopOpacity={0.5} />
-            <Stop offset="0.4" stopColor="#C4B5FD" stopOpacity={0.18} />
-            <Stop offset="1" stopColor="#C4B5FD" stopOpacity={0} />
+            <Stop offset="0" stopColor="#E7E3FD" stopOpacity={0.5} />
+            <Stop offset="0.4" stopColor="#CEC7FB" stopOpacity={0.18} />
+            <Stop offset="1" stopColor="#CEC7FB" stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Ellipse cx={(FRAME.width + M * 2) / 2} cy={(FRAME.height + M * 2) / 2}
@@ -2120,9 +2119,9 @@ function InkwellFx({ press, holdT, shift }: FxProps) {
           {/* Bounding-box gradient: the fade fraction rides the slab, so the
               soft top stays soft at every fill level. */}
           <SvgLinearGradient id="inkSlab" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#2A1B70" stopOpacity={0} />
-            <Stop offset={14 / SLAB_H} stopColor="#2A1B70" stopOpacity={0.8} />
-            <Stop offset="1" stopColor="#221459" stopOpacity={0.92} />
+            <Stop offset="0" stopColor="#271D66" stopOpacity={0} />
+            <Stop offset={14 / SLAB_H} stopColor="#271D66" stopOpacity={0.8} />
+            <Stop offset="1" stopColor="#181140" stopOpacity={0.92} />
           </SvgLinearGradient>
         </Defs>
         <AnimatedRect x={0} width={FRAME.width + M * 2} height={SLAB_H}
@@ -2150,16 +2149,16 @@ function StitchFx({ press, holdT }: FxProps) {
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <AnimatedRect x={6} y={6} width={FRAME.width - 12} height={h} rx={h / 2}
-          fill="none" stroke="#C9BFF5" strokeWidth={2.6} strokeLinecap="round"
+          fill="none" stroke="#CEC7FB" strokeWidth={2.6} strokeLinecap="round"
           strokeDasharray="0.1 8" animatedProps={props} />
         <Rect x={11} y={11} width={FRAME.width - 22} height={FRAME.height - 22}
-          rx={(FRAME.height - 22) / 2} fill="none" stroke="#8F82C9"
+          rx={(FRAME.height - 22) / 2} fill="none" stroke="#8B7CF6"
           strokeOpacity={0.4} strokeWidth={1.8} strokeLinecap="round"
           strokeDasharray="0.1 8" />
         {/* Third ring: finest beads, quietest, offset half a cycle so its
             dots sit between the inner ring's — three depths of beadwork. */}
         <Rect x={16} y={16} width={FRAME.width - 32} height={FRAME.height - 32}
-          rx={(FRAME.height - 32) / 2} fill="none" stroke="#6F639F"
+          rx={(FRAME.height - 32) / 2} fill="none" stroke="#5847D6"
           strokeOpacity={0.3} strokeWidth={1.2} strokeLinecap="round"
           strokeDasharray="0.1 8" strokeDashoffset={4} />
       </Svg>
@@ -2185,8 +2184,8 @@ function CometFx({ press, holdT, shift }: FxProps) {
     behind: i * 14,
     width: 2.4 - i * 0.14,
     opacity: (1 - i / 9) ** 1.6,
-    color: ['#FFFFFF', '#F0EAFF', '#DDD2FF', '#C9BCFF', '#B7A8FF',
-            '#A897FA', '#9A89F8', '#8F7EF7', '#8B7CF6'][i],
+    color: ['#F3F1FE', '#E7E3FD', '#CEC7FB', '#CEC7FB', '#A99BF5',
+            '#A99BF5', '#8B7CF6', '#8B7CF6', '#8B7CF6'][i],
   }));
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
@@ -2236,7 +2235,7 @@ function DotMesh() {
   for (let x = step / 2; x < FRAME.width; x += step) {
     for (let y = step / 2; y < FRAME.height; y += step) {
       dots.push(
-        <Circle key={`${x}-${y}`} cx={x} cy={y} r={1.1} fill="#FFFFFF" />,
+        <Circle key={`${x}-${y}`} cx={x} cy={y} r={1.1} fill="#F3F1FE" />,
       );
     }
   }
@@ -2271,7 +2270,7 @@ function ButtonLabel({
 }
 
 /**
- * Figma fills the label with a 115.7deg gradient running white -> #8375E5.
+ * Figma fills the label with a 115.7deg gradient running white -> #8B7CF6.
  * RN cannot gradient-fill text directly, so the text becomes a mask over a
  * gradient. The hidden copy underneath keeps the mask from collapsing the
  * layout and gives assistive tech something to measure.
@@ -2287,7 +2286,7 @@ function GradientLabel({
   // o'clock, which lands just past horizontal, sweeping left-to-right and
   // slightly downward. Variants ported from other nodes override.
   const size = spec.fontSize ? { fontSize: spec.fontSize } : null;
-  const colors = spec.colors ?? ['#FFFFFF', theme.color.labelGradientEnd];
+  const colors = spec.colors ?? ['#F3F1FE', theme.color.indigo400];
   const locations = spec.locations ?? [0.2, 1];
   const start = spec.angle?.start ?? { x: 0, y: 0.1 };
   const end = spec.angle?.end ?? { x: 1, y: 0.9 };
@@ -2337,7 +2336,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: theme.radius.lg,
     borderWidth: 2,
-    borderColor: theme.color.hairline,
+    borderColor: 'rgba(169, 155, 245, 0.2)',
     overflow: 'hidden',
     // Inset shadows (used by several variants) need the New Architecture,
     // which Expo SDK 57 / RN 0.86 enables by default.
@@ -2347,7 +2346,7 @@ const styles = StyleSheet.create({
   },
   concaveFill: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: theme.color.primary950,
+    backgroundColor: '#181140',
   },
   litLayer: {
     position: 'absolute',
@@ -2375,7 +2374,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   maskText: {
-    color: '#000000',
+    color: '#181140',
   },
   gradientSizer: {
     opacity: 0,

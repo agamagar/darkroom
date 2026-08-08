@@ -157,10 +157,13 @@ function Chip({
 }
 
 function EdgeFade({ side }: { side: 'left' | 'right' }) {
+  // Fades to the PANEL surface, not the app background — mismatched colours
+  // here painted visible gradient blocks behind the chips once the wheels
+  // moved onto the docked panel.
   return (
     <LinearGradient
       pointerEvents="none"
-      colors={[theme.color.bg, 'rgba(11, 18, 32, 0)']}
+      colors={[theme.color.surface, 'rgba(20, 28, 43, 0)']}
       start={{ x: side === 'left' ? 0 : 1, y: 0 }}
       end={{ x: side === 'left' ? 1 : 0, y: 0 }}
       style={[styles.fade, side === 'left' ? styles.fadeLeft : styles.fadeRight]}
