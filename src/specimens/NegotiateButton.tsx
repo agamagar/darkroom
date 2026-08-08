@@ -191,7 +191,6 @@ type VariantSpec = {
   label:
     | {
         kind: 'gradient';
-        fontSize?: number;
         colors?: readonly [string, string, ...string[]];
         locations?: readonly [number, number, ...number[]];
         angle?: { start: { x: number; y: number }; end: { x: number; y: number } };
@@ -323,9 +322,9 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     dish: true,
     label: {
       kind: 'gradient',
-      // 14px here, not the 16 of node 31:293; the sheen is a white band with
-      // one grey notch at 66%, angled 114.6deg.
-      fontSize: 14,
+      // The sheen is a white band with one grey notch at 66%, angled
+      // 114.6deg. (The node's 14px label is normalised to the bench-wide
+      // 16px for cross-variant consistency.)
       colors: ['#F3F1FE', '#F3F1FE', '#CEC7FB', '#F3F1FE'],
       locations: [0.479, 0.623, 0.662, 0.698],
       // CSS 114.612deg -> pixel direction (0.909, 0.416). Converted to
@@ -2320,7 +2319,7 @@ function ButtonLabel({
 }) {
   if (spec.kind === 'solid') {
     return (
-      <Text style={[styles.label, { color: spec.color, fontWeight: '500' }]}>
+      <Text style={[styles.label, { color: spec.color }]}>
         {children}
       </Text>
     );
@@ -2344,7 +2343,6 @@ function GradientLabel({
   // Defaults are node 31:293's: 115.7deg measured clockwise from Figma's 12
   // o'clock, which lands just past horizontal, sweeping left-to-right and
   // slightly downward. Variants ported from other nodes override.
-  const size = spec.fontSize ? { fontSize: spec.fontSize } : null;
   const colors = spec.colors ?? ['#F3F1FE', theme.color.indigo400];
   const locations = spec.locations ?? [0.2, 1];
   const start = spec.angle?.start ?? { x: 0, y: 0.1 };
@@ -2354,7 +2352,7 @@ function GradientLabel({
       style={styles.labelMask}
       maskElement={
         <View style={styles.maskFill}>
-          <Text style={[styles.label, size, styles.maskText]}>{children}</Text>
+          <Text style={[styles.label, styles.maskText]}>{children}</Text>
         </View>
       }>
       <LinearGradient
@@ -2362,7 +2360,7 @@ function GradientLabel({
         locations={locations as readonly [number, number, ...number[]]}
         start={start}
         end={end}>
-        <Text style={[styles.label, size, styles.gradientSizer]}>
+        <Text style={[styles.label, styles.gradientSizer]}>
           {children}
         </Text>
       </LinearGradient>
