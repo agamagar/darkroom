@@ -1945,111 +1945,78 @@ function HologramFx({ press, holdT }: FxProps) {
   );
 }
 
-/** Deterministic golden-angle star scatter — no Math.random anywhere. */
-function starPoints(count: number, seed: number): [number, number, number][] {
-  const pts: [number, number, number][] = [];
-  for (let i = 1; i <= count; i++) {
-    const x = ((i * 61.8034 + seed * 47.9) % 1) * FRAME.width;
-    const y = ((i * 38.196 + seed * 29.3) % 1) * FRAME.height;
-    const r = 0.5 + ((i * 23.6068) % 1) * 0.9;
-    pts.push([x, y, r]);
-  }
-  return pts;
-}
-const STAR_LAYERS = [
-  { pts: starPoints(14, 1), rate: 0.2, opacity: 0.35 },
-  { pts: starPoints(11, 2), rate: 0.7, opacity: 0.55 },
-  { pts: starPoints(8, 3), rate: 1.5, opacity: 0.9 },
-];
-
-function StarLayer({
-  layer, press, shift,
-}: FxProps & { layer: (typeof STAR_LAYERS)[number] }) {
-  const style = useAnimatedStyle(() => ({
-    // The resting field: parallax on tilt, yielding to the jump on press.
-    opacity: 1 - press.value,
-    transform: [
-      { translateX: (shift?.x.value ?? 0) * layer.rate },
-      { translateY: (shift?.y.value ?? 0) * layer.rate },
-    ],
-  }));
-  return (
-    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {layer.pts.map(([x, y, r], i) => (
-          <Circle key={i} cx={x} cy={y} r={r} fill="#F3F1FE"
-            fillOpacity={layer.opacity} />
-        ))}
-      </Svg>
-    </Animated.View>
-  );
-}
-
 /**
- * The jump: each streak is a star rushing outward from the vanishing point
- * at the pill's centre — head racing away, tail stretched toward where it
- * came from. Four rushes per hold cycle (~800ms each), phase-staggered per
- * star so the stream never gaps. Cockpit view, not a map: press = throttle.
+ * One star population serves both states. Positions come from the R2
+ * low-discrepancy sequence (two independent irrationals), which spreads
+ * points evenly-but-randomly across the whole pill — the old golden-angle
+ * scatter correlated x with y and banded the stars into diagonals.
+ *
+ * Each star is a zero-length round-capped line: at rest that renders as a
+ * dot (with per-depth tilt parallax). Pressing is the throttle — the SAME
+ * star accelerates outward from its own resting position (the rush offset
+ * is scaled by press, so the transition is continuous, no swap), stretches
+ * into a streak, fades as it passes the hull, and respawns at home for the
+ * next rush. Four rushes per hold cycle, phase-staggered.
  */
-const STAR_STREAKS = (() => {
+const STARS = (() => {
+  const A1 = 0.7548776662;
+  const A2 = 0.5698402909; // R2 sequence
   const cx = FRAME.width / 2;
   const cy = FRAME.height / 2;
-  const streaks: { dx: number; dy: number; r0: number; phase: number; depth: number }[] = [];
-  starPoints(22, 5).forEach(([x, y], i) => {
+  return Array.from({ length: 26 }, (_, i) => {
+    const x = ((0.5 + (i + 1) * A1) % 1) * FRAME.width;
+    const y = ((0.5 + (i + 1) * A2) % 1) * FRAME.height;
     let dx = x - cx;
     let dy = y - cy;
-    const len = Math.max(12, Math.hypot(dx, dy));
+    const len = Math.max(10, Math.hypot(dx, dy));
     dx /= len; dy /= len;
-    streaks.push({
-      dx, dy,
-      r0: 6 + ((i * 17.9) % 1) * 30,
+    return {
+      x, y, dx, dy,
+      r: 0.6 + ((i * 23.6068) % 1) * 1.1,
+      depth: 0.45 + ((i * 41.4214) % 1) * 0.9,
       phase: (i * 0.618034) % 1,
-      depth: 0.6 + ((i * 41.4) % 1) * 0.8,
-    });
+    };
   });
-  return streaks;
 })();
 
-function StarStreak({
-  streak, press, holdT,
-}: FxProps & { streak: (typeof STAR_STREAKS)[number] }) {
+function Star({
+  star, press, holdT, shift,
+}: FxProps & { star: (typeof STARS)[number] }) {
   const props = useAnimatedProps(() => {
-    const t = (holdT.value * 4 + streak.phase) % 1;
+    const px = star.x + (shift?.x.value ?? 0) * star.depth * 0.8;
+    const py = star.y + (shift?.y.value ?? 0) * star.depth * 0.8;
+    const t = (holdT.value * 4 + star.phase) % 1;
     const rush = Easing.in(Easing.quad)(t);
-    const r = streak.r0 + rush * 150 * streak.depth;
-    const streakLen = (4 + rush * 34 * streak.depth) * press.value;
-    const hx = FRAME.width / 2 + streak.dx * r;
-    const hy = FRAME.height / 2 + streak.dy * r;
+    // Scaled by press: at press-in every star departs from ITS OWN dot.
+    const out = rush * 150 * star.depth * press.value;
+    const streak = (3 + rush * 36 * star.depth) * press.value;
+    const hx = px + star.dx * out;
+    const hy = py + star.dy * out;
+    const restOp = 0.3 + star.depth * 0.5;
+    const rushOp = star.depth * Math.min(1, t / 0.12) * (1 - rush * 0.55);
     return {
-      x1: hx - streak.dx * streakLen,
-      y1: hy - streak.dy * streakLen,
+      x1: hx - star.dx * streak,
+      y1: hy - star.dy * streak,
       x2: hx,
       y2: hy,
-      // Born dim, brightest mid-rush, gone as it leaves the hull.
-      strokeOpacity:
-        press.value * streak.depth * Math.min(1, t / 0.15) * (1 - rush * 0.6),
+      strokeOpacity: restOp * (1 - press.value) + rushOp * press.value,
     };
   });
   return (
-    <AnimatedLine stroke="#E7E3FD" strokeWidth={1.1} strokeLinecap="round"
-      animatedProps={props} />
+    <AnimatedLine stroke="#E7E3FD" strokeWidth={star.r * 2}
+      strokeLinecap="round" animatedProps={props} />
   );
 }
 
 function StarfieldFx(fxp: FxProps) {
   return (
-    <>
-      {STAR_LAYERS.map((layer, i) => (
-        <StarLayer key={i} layer={layer} {...fxp} />
-      ))}
-      <View pointerEvents="none" style={styles.glowLayer}>
-        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-          {STAR_STREAKS.map((streak, i) => (
-            <StarStreak key={i} streak={streak} {...fxp} />
-          ))}
-        </Svg>
-      </View>
-    </>
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {STARS.map((star, i) => (
+          <Star key={i} star={star} {...fxp} />
+        ))}
+      </Svg>
+    </View>
   );
 }
 

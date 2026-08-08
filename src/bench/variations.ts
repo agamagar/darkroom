@@ -36,7 +36,6 @@ export const TYPES = [
   'hologram',
   'starfield',
   'spotlight',
-  'inkwell',
   'stitch',
   'comet',
 ] as const;
