@@ -1892,24 +1892,29 @@ function AuroraFx(fxp: FxProps) {
 /** One outbound ripple ring. */
 function RippleRing({ index, press, holdT }: FxProps & { index: number }) {
   const props = useAnimatedProps(() => {
-    const phase = (((holdT.value - index * 0.25) % 1) + 1) % 1;
+    const phase = (((holdT.value - index * 0.2) % 1) + 1) % 1;
     const grow = Easing.out(Easing.quad)(phase);
-    const ry = 4 + grow * 29;
-    const rx = 8 + grow * 126;
+    // ONE radius drives the wavefront, as water does it: the ring is a true
+    // circle while it fits (r < half-height), then flattens into a stadium
+    // as it meets the long walls — height capped, width still travelling.
+    // The old independent width/height rates stretched the rings into
+    // geometrically impossible wavefronts.
+    const r = 3 + grow * 138;
+    const ry = Math.min(r, 31);
+    const hw = Math.min(r, 133);
     return {
-      x: FRAME.width / 2 - rx,
+      x: FRAME.width / 2 - hw,
       y: FRAME.height / 2 - ry,
-      width: rx * 2,
+      width: hw * 2,
       height: ry * 2,
-      rx: Math.min(ry, rx),
-      // Reversed on direction: born invisible at the centre, gaining light
-      // as it expands — and the wrap is seamless for free, because a ring
-      // resets to zero size exactly when its opacity is zero.
+      rx: ry,
+      // Born invisible at the centre, gaining light as it expands; the wrap
+      // is seamless because a ring resets to zero exactly at zero opacity.
       strokeOpacity: press.value * 0.55 * grow,
     };
   });
   return (
-    <AnimatedRect fill="none" stroke="#CEC7FB" strokeWidth={1.2}
+    <AnimatedRect fill="none" stroke="#CEC7FB" strokeWidth={1.4}
       animatedProps={props} />
   );
 }
@@ -1918,7 +1923,7 @@ function RippleFx(fxp: FxProps) {
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <RippleRing key={i} index={i} {...fxp} />
         ))}
       </Svg>
@@ -2074,21 +2079,23 @@ function StitchFx({ press, holdT }: FxProps) {
   const props = useAnimatedProps(() => ({
     strokeDashoffset: -holdT.value * 16 * press.value,
   }));
-  const h = FRAME.height - 12;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        <AnimatedRect x={6} y={6} width={FRAME.width - 12} height={h} rx={h / 2}
+        {/* Outer beads ride the rim itself — no internal padding; the
+            button's edge IS the outer ring. */}
+        <AnimatedRect x={2} y={2} width={FRAME.width - 4}
+          height={FRAME.height - 4} rx={(FRAME.height - 4) / 2}
           fill="none" stroke="#CEC7FB" strokeWidth={2.6} strokeLinecap="round"
           strokeDasharray="0.1 8" animatedProps={props} />
-        <Rect x={11} y={11} width={FRAME.width - 22} height={FRAME.height - 22}
-          rx={(FRAME.height - 22) / 2} fill="none" stroke="#8B7CF6"
+        <Rect x={7} y={7} width={FRAME.width - 14} height={FRAME.height - 14}
+          rx={(FRAME.height - 14) / 2} fill="none" stroke="#8B7CF6"
           strokeOpacity={0.4} strokeWidth={1.8} strokeLinecap="round"
           strokeDasharray="0.1 8" />
         {/* Third ring: finest beads, quietest, offset half a cycle so its
             dots sit between the inner ring's — three depths of beadwork. */}
-        <Rect x={16} y={16} width={FRAME.width - 32} height={FRAME.height - 32}
-          rx={(FRAME.height - 32) / 2} fill="none" stroke="#5847D6"
+        <Rect x={12} y={12} width={FRAME.width - 24} height={FRAME.height - 24}
+          rx={(FRAME.height - 24) / 2} fill="none" stroke="#5847D6"
           strokeOpacity={0.3} strokeWidth={1.2} strokeLinecap="round"
           strokeDasharray="0.1 8" strokeDashoffset={4} />
       </Svg>
@@ -2343,22 +2350,22 @@ function GlitchFx(fxp: FxProps) {
 }
 
 /**
- * A 20x5 grid (100 cells at 12pt). The pixels light around the TOUCH, not
+ * A 24x6 grid (144 cells at 10pt). The pixels light around the TOUCH, not
  * randomly: each cell's brightness falls off with its distance from the
  * finger (radius breathing on the hold clock), the lit region follows the
  * finger as it drifts, and a per-step hash shimmers the cells inside the
  * halo so the area reads as live static rather than a flat disc.
  */
-const PIXELS = Array.from({ length: 100 }, (_, i) => ({
-  col: i % 20,
-  row: Math.floor(i / 20),
+const PIXELS = Array.from({ length: 144 }, (_, i) => ({
+  col: i % 24,
+  row: Math.floor(i / 24),
 }));
 
 function Pixel({
   px, index, press, holdT, touch,
 }: FxProps & { px: (typeof PIXELS)[number]; index: number }) {
-  const cx = 1.6 + px.col * 13.6 + 6;
-  const cy = 0.8 + px.row * 13.6 + 6;
+  const cx = 1 + px.col * 11.3 + 5;
+  const cy = 1 + px.row * 11 + 5;
   const props = useAnimatedProps(() => {
     const tx = touch?.x.value ?? FRAME.width / 2;
     const ty = touch?.y.value ?? FRAME.height / 2;
@@ -2370,8 +2377,8 @@ function Pixel({
     return { fillOpacity: 0.07 + press.value * fall * shimmer * 0.8 };
   });
   return (
-    <AnimatedRect x={1.6 + px.col * 13.6} y={0.8 + px.row * 13.6} width={12}
-      height={12} rx={2} fill="#8B7CF6" animatedProps={props} />
+    <AnimatedRect x={1 + px.col * 11.3} y={1 + px.row * 11} width={10}
+      height={10} rx={1.5} fill="#8B7CF6" animatedProps={props} />
   );
 }
 
