@@ -495,13 +495,25 @@ export function NegotiateButton({
   const press = useSharedValue(forcePressed ? 1 : 0);
   const reducedMotion = useReducedMotion();
 
-  const pillStyle = useAnimatedStyle(() => ({
-    // Reduce Motion kills the scale but keeps the glow — the press must still
-    // be visible, just not by moving.
-    transform: [
-      { scale: reducedMotion ? 1 : 1 - press.value * (1 - PRESSED_SCALE) },
-    ],
-  }));
+  const pillStyle = useAnimatedStyle(() => {
+    // The strong pulse the opacity channel could not safely carry lives
+    // here instead: while held, the whole pill breathes ±0.8% around its
+    // pressed scale — clearly alive, never readable as a state change.
+    const scaleBreath = reducedMotion
+      ? 0
+      : press.value * 0.008 * Math.sin(holdT.value * 2 * Math.PI);
+    return {
+      // Reduce Motion kills the scale but keeps the glow — the press must
+      // still be visible, just not by moving.
+      transform: [
+        {
+          scale: reducedMotion
+            ? 1
+            : 1 - press.value * (1 - PRESSED_SCALE) + scaleBreath,
+        },
+      ],
+    };
+  });
 
   /**
    * The hold clock — neon's paradigm, promoted system-wide. Press-in starts
@@ -531,9 +543,14 @@ export function NegotiateButton({
   /** Un-breathing press opacity, for variants that carry their own loop. */
   const litPlainStyle = useAnimatedStyle(() => ({ opacity: press.value }));
   const litStyle = useAnimatedStyle(() => {
+    // STATE IS A FLOOR, LIFE PLAYS ABOVE IT. The deep 40-100% swing made
+    // held buttons read as leaving pressed mode at the trough — state
+    // flapping, not breathing. Opacity now never falls below 0.86 of full
+    // pressed, so the state is unambiguous for the entire hold, and the
+    // remaining pulse is life on top of it.
     const breath = reducedMotion
       ? 1
-      : 0.7 + 0.3 * Math.sin(holdT.value * 2 * Math.PI);
+      : 0.93 + 0.07 * Math.sin(holdT.value * 2 * Math.PI);
     return { opacity: press.value * breath };
   });
   /** Inverse of litStyle — for chrome the press must REMOVE, not add. */
