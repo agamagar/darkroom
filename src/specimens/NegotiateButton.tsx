@@ -2037,9 +2037,18 @@ function SpotlightFx({ press, shift }: FxProps) {
   );
 }
 
-/** Ink rising with the press; the surface tips with the phone. */
+/**
+ * Ink rising with the press; the surface tips with the phone.
+ *
+ * No visible edges, by construction: the canvas margin is 140pt (far past
+ * any rotation + tip the tilt and lap can produce), and the ink's top is
+ * not a hard line — the slab fades in over its first ~14pt via a bounding-
+ * box gradient, with a soft wide meniscus glow instead of a stroke. What
+ * enters the button is a liquid surface, not the edge of a shape.
+ */
 function InkwellFx({ press, holdT, shift }: FxProps) {
-  const M = 60;
+  const M = 140;
+  const SLAB_H = FRAME.height + M;
   const style = useAnimatedStyle(() => {
     const tip =
       (shift?.x.value ?? 0) * -0.12 +
@@ -2053,19 +2062,28 @@ function InkwellFx({ press, holdT, shift }: FxProps) {
   const surfProps = useAnimatedProps(() => {
     const level = press.value * 46;
     return {
-      y1: FRAME.height + M - level,
-      y2: FRAME.height + M - level,
-      strokeOpacity: press.value * 0.8,
+      y1: FRAME.height + M - level + 2,
+      y2: FRAME.height + M - level + 2,
+      strokeOpacity: press.value * 0.3,
     };
   });
   return (
     <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
       <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
         style={{ position: 'absolute', left: -M, top: -M }}>
-        <AnimatedRect x={0} width={FRAME.width + M * 2} height={FRAME.height + M}
-          fill="#2A1B70" fillOpacity={0.85} animatedProps={inkProps} />
+        <Defs>
+          {/* Bounding-box gradient: the fade fraction rides the slab, so the
+              soft top stays soft at every fill level. */}
+          <SvgLinearGradient id="inkSlab" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#2A1B70" stopOpacity={0} />
+            <Stop offset={14 / SLAB_H} stopColor="#2A1B70" stopOpacity={0.8} />
+            <Stop offset="1" stopColor="#221459" stopOpacity={0.92} />
+          </SvgLinearGradient>
+        </Defs>
+        <AnimatedRect x={0} width={FRAME.width + M * 2} height={SLAB_H}
+          fill="url(#inkSlab)" animatedProps={inkProps} />
         <AnimatedLine x1={0} x2={FRAME.width + M * 2} stroke="#8B7CF6"
-          strokeWidth={1.5} animatedProps={surfProps} />
+          strokeWidth={5} strokeLinecap="round" animatedProps={surfProps} />
       </Svg>
     </Animated.View>
   );
