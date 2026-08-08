@@ -495,6 +495,31 @@ export function NegotiateButton({
   const press = useSharedValue(forcePressed ? 1 : 0);
   const reducedMotion = useReducedMotion();
 
+  /**
+   * The hold clock — neon's paradigm, promoted system-wide. Press-in starts
+   * it from zero, it repeats for as long as the finger stays down, release
+   * cancels and rewinds. Declared BEFORE its first consumer: worklets run
+   * at creation, so a later-declared shared value is undefined inside them
+   * (the crash the scale-breath shipped with).
+   */
+  const holdT = useSharedValue(0);
+  useAnimatedReaction(
+    () => press.value > 0.05,
+    (active, prev) => {
+      if (active === prev) return;
+      if (active) {
+        holdT.value = 0;
+        holdT.value = withRepeat(
+          withTiming(1, { duration: 3200, easing: Easing.linear }),
+          -1,
+        );
+      } else {
+        cancelAnimation(holdT);
+        holdT.value = withTiming(0, { duration: 200 });
+      }
+    },
+  );
+
   const pillStyle = useAnimatedStyle(() => {
     // The strong pulse the opacity channel could not safely carry lives
     // here instead: while held, the whole pill breathes ±0.8% around its
@@ -515,31 +540,6 @@ export function NegotiateButton({
     };
   });
 
-  /**
-   * The hold clock — neon's paradigm, promoted system-wide. Press-in starts
-   * it from zero, it repeats for as long as the finger stays down, release
-   * cancels and rewinds. Every variant's lit layer breathes on it (a ±30%
-   * sine around 0.70), so no pressed state is ever a still image: glows
-   * pulse, the dish swells, ember's band shimmers — each in its own
-   * material, all from one clock. Reduce Motion pins the breath at full.
-   */
-  const holdT = useSharedValue(0);
-  useAnimatedReaction(
-    () => press.value > 0.05,
-    (active, prev) => {
-      if (active === prev) return;
-      if (active) {
-        holdT.value = 0;
-        holdT.value = withRepeat(
-          withTiming(1, { duration: 3200, easing: Easing.linear }),
-          -1,
-        );
-      } else {
-        cancelAnimation(holdT);
-        holdT.value = withTiming(0, { duration: 200 });
-      }
-    },
-  );
   /** Un-breathing press opacity, for variants that carry their own loop. */
   const litPlainStyle = useAnimatedStyle(() => ({ opacity: press.value }));
   const litStyle = useAnimatedStyle(() => {
