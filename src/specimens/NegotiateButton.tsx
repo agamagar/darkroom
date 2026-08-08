@@ -646,6 +646,21 @@ export function NegotiateButton({
     },
   );
 
+  /**
+   * The ambient clock — the one clock the press does NOT own. A slow 16s
+   * loop for idle life (starfield's cruise drift); runs from mount, pinned
+   * to 0 by Reduce Motion and by the golden freeze, so determinism holds.
+   */
+  const ambientT = useSharedValue(0);
+  useEffect(() => {
+    if (reducedMotion) return;
+    ambientT.value = withRepeat(
+      withTiming(1, { duration: 16000, easing: Easing.linear }),
+      -1,
+    );
+    return () => cancelAnimation(ambientT);
+  }, [reducedMotion, ambientT]);
+
   const pillStyle = useAnimatedStyle(() => {
     // The strong pulse the opacity channel could not safely carry lives
     // here instead: while held, the whole pill breathes ±0.8% around its
@@ -871,7 +886,8 @@ export function NegotiateButton({
         )}
         {spec.fx && (
           <VariantFx kind={spec.fx} press={press} holdT={holdT}
-            shift={glowShift} touch={{ x: touchX, y: touchY }} />
+            ambientT={ambientT} shift={glowShift}
+            touch={{ x: touchX, y: touchY }} />
         )}
         {spec.mesh && (
           <>
@@ -1837,6 +1853,7 @@ function MoltenRim() {
 type FxProps = {
   press: SharedValue<number>;
   holdT: SharedValue<number>;
+  ambientT: SharedValue<number>;
   shift?: { x: SharedValue<number>; y: SharedValue<number> };
   touch?: { x: SharedValue<number>; y: SharedValue<number> };
 };
@@ -1998,7 +2015,7 @@ const STARS = (() => {
   const A2 = 0.5698402909; // R2 sequence
   const cx = FRAME.width / 2;
   const cy = FRAME.height / 2;
-  return Array.from({ length: 26 }, (_, i) => {
+  return Array.from({ length: 44 }, (_, i) => {
     const x = ((0.5 + (i + 1) * A1) % 1) * FRAME.width;
     const y = ((0.5 + (i + 1) * A2) % 1) * FRAME.height;
     let dx = x - cx;
@@ -2015,11 +2032,18 @@ const STARS = (() => {
 })();
 
 function Star({
-  star, press, holdT, shift,
+  star, press, holdT, ambientT, shift,
 }: FxProps & { star: (typeof STARS)[number] }) {
   const props = useAnimatedProps(() => {
-    const px = star.x + (shift?.x.value ?? 0) * star.depth * 0.8;
-    const py = star.y + (shift?.y.value ?? 0) * star.depth * 0.8;
+    // Cruise: at rest each star wanders a small lissajous around its home
+    // and twinkles on the ambient clock — space does not hold still. The
+    // wander damps out with the press so the jump departs from (nearly)
+    // where the star was seen.
+    const cruise = 1 - press.value;
+    const wx = 2.6 * Math.sin(2 * Math.PI * (ambientT.value * 2 + star.phase)) * cruise;
+    const wy = 1.6 * Math.sin(2 * Math.PI * (ambientT.value * 3 + star.phase * 2.3)) * cruise;
+    const px = star.x + wx + (shift?.x.value ?? 0) * star.depth * 0.8;
+    const py = star.y + wy + (shift?.y.value ?? 0) * star.depth * 0.8;
     const t = (holdT.value * 4 + star.phase) % 1;
     const rush = Easing.in(Easing.quad)(t);
     // Scaled by press: at press-in every star departs from ITS OWN dot.
@@ -2027,7 +2051,9 @@ function Star({
     const streak = (3 + rush * 36 * star.depth) * press.value;
     const hx = px + star.dx * out;
     const hy = py + star.dy * out;
-    const restOp = 0.3 + star.depth * 0.5;
+    const twinkle =
+      0.75 + 0.25 * Math.sin(2 * Math.PI * (ambientT.value * 5 + star.phase * 7));
+    const restOp = (0.3 + star.depth * 0.5) * twinkle;
     const rushOp = star.depth * Math.min(1, t / 0.12) * (1 - rush * 0.55);
     return {
       x1: hx - star.dx * streak,
@@ -2119,7 +2145,7 @@ function StitchFx({ press, holdT }: FxProps) {
 }
 
 /** Comet: bright head, layered fading tail, orbiting the rim while held. */
-function CometFx({ press, holdT, shift }: FxProps) {
+function CometFx({ press, holdT, ambientT, shift }: FxProps) {
   const inset = 2;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
@@ -2154,11 +2180,11 @@ function CometFx({ press, holdT, shift }: FxProps) {
         {segs.map((seg, i) => (
           <CometSeg key={`h${i}`} {...{ inset, w, h, r, P }}
             seg={{ ...seg, width: 6, opacity: seg.opacity * 0.22 }}
-            press={press} holdT={holdT} shift={shift} />
+            press={press} holdT={holdT} ambientT={ambientT} shift={shift} />
         ))}
         {segs.map((seg, i) => (
           <CometSeg key={i} {...{ inset, w, h, r, P }} seg={seg}
-            press={press} holdT={holdT} shift={shift} />
+            press={press} holdT={holdT} ambientT={ambientT} shift={shift} />
         ))}
       </Svg>
     </View>
