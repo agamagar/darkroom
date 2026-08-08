@@ -2106,16 +2106,24 @@ function CometFx({ press, holdT, shift }: FxProps) {
   const r = h / 2;
   // Perimeter of the stadium rim the comet rides.
   const P = 2 * (w - 2 * r) + 2 * Math.PI * r;
-  const tails = [
-    { len: 26, width: 2.2, opacity: 1, color: '#FFFFFF' },
-    { len: 60, width: 1.6, opacity: 0.35, color: '#B7A8FF' },
-    { len: 110, width: 1.2, opacity: 0.14, color: '#8B7CF6' },
-  ];
+  // ONE comet, not three: nine short segments trail the head at stepped
+  // offsets, opacity falling on a power curve and colour cooling from white
+  // through lilac to indigo. Adjacent segments overlap by 1pt, so they fuse
+  // into a single continuous body with a smoothly dying tail — one object
+  // revolving the border, not layered strokes chasing each other.
+  const segs = Array.from({ length: 9 }, (_, i) => ({
+    len: 15,
+    behind: i * 14,
+    width: 2.4 - i * 0.14,
+    opacity: (1 - i / 9) ** 1.6,
+    color: ['#FFFFFF', '#F0EAFF', '#DDD2FF', '#C9BCFF', '#B7A8FF',
+            '#A897FA', '#9A89F8', '#8F7EF7', '#8B7CF6'][i],
+  }));
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {tails.map((tail, i) => (
-          <CometTail key={i} {...{ inset, w, h, r, P }} tail={tail}
+        {segs.map((seg, i) => (
+          <CometSeg key={i} {...{ inset, w, h, r, P }} seg={seg}
             press={press} holdT={holdT} shift={shift} />
         ))}
       </Svg>
@@ -2123,24 +2131,24 @@ function CometFx({ press, holdT, shift }: FxProps) {
   );
 }
 
-function CometTail({
-  inset, w, h, r, P, tail, press, holdT, shift,
+function CometSeg({
+  inset, w, h, r, P, seg, press, holdT, shift,
 }: FxProps & {
   inset: number; w: number; h: number; r: number; P: number;
-  tail: { len: number; width: number; opacity: number; color: string };
+  seg: { len: number; behind: number; width: number; opacity: number; color: string };
 }) {
   const props = useAnimatedProps(() => {
     // Parked at the top-right arc at rest, nudged by roll; orbits on hold.
     const park = P * 0.12 + (shift?.x.value ?? 0) * 0.6;
     return {
-      strokeDashoffset: -(park + holdT.value * P * press.value),
-      strokeOpacity: tail.opacity * (0.5 + 0.5 * press.value),
+      strokeDashoffset: -(park + holdT.value * P * press.value) + seg.behind,
+      strokeOpacity: seg.opacity * (0.5 + 0.5 * press.value),
     };
   });
   return (
     <AnimatedRect x={inset} y={inset} width={w} height={h} rx={r} fill="none"
-      stroke={tail.color} strokeWidth={tail.width}
-      strokeDasharray={`${tail.len} ${P - tail.len}`} animatedProps={props} />
+      stroke={seg.color} strokeWidth={seg.width} strokeLinecap="round"
+      strokeDasharray={`${seg.len} ${P - seg.len}`} animatedProps={props} />
   );
 }
 
