@@ -886,7 +886,7 @@ export function NegotiateButton({
         )}
         {showIcon && <NegotiateGlyph kind={iconKind} />}
         <Animated.View style={developStyle}>
-          <ButtonLabel spec={spec.label}>{label}</ButtonLabel>
+          <ButtonLabel spec={spec.label} shift={glowShift}>{label}</ButtonLabel>
           {spec.developLabel && (
             <Animated.View
               pointerEvents="none"
@@ -2648,9 +2648,11 @@ function DotMesh() {
 
 function ButtonLabel({
   spec,
+  shift,
   children,
 }: {
   spec: VariantSpec['label'];
+  shift?: { x: SharedValue<number>; y: SharedValue<number> };
   children: string;
 }) {
   if (spec.kind === 'solid') {
@@ -2660,7 +2662,7 @@ function ButtonLabel({
       </Text>
     );
   }
-  return <GradientLabel spec={spec}>{children}</GradientLabel>;
+  return <GradientLabel spec={spec} shift={shift}>{children}</GradientLabel>;
 }
 
 /**
@@ -2671,11 +2673,24 @@ function ButtonLabel({
  */
 function GradientLabel({
   spec,
+  shift,
   children,
 }: {
   spec: Extract<VariantSpec['label'], { kind: 'gradient' }>;
+  shift?: { x: SharedValue<number>; y: SharedValue<number> };
   children: string;
 }) {
+  // The tilt slides the gradient UNDER the text mask — the fill is what
+  // moves, never the glyphs — so the label's sheen travels with the device
+  // like every other light on the button. Same focal-point principle as
+  // the washes, same oversized-canvas rule: the gradient extends 60pt past
+  // the text so no translation can expose its edge.
+  const tiltStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (shift?.x.value ?? 0) * 0.9 },
+      { translateY: (shift?.y.value ?? 0) * 0.45 },
+    ],
+  }));
   // Defaults are node 31:293's: 115.7deg measured clockwise from Figma's 12
   // o'clock, which lands just past horizontal, sweeping left-to-right and
   // slightly downward. Variants ported from other nodes override.
@@ -2691,15 +2706,22 @@ function GradientLabel({
           <Text style={[styles.label, styles.maskText]}>{children}</Text>
         </View>
       }>
-      <LinearGradient
-        colors={colors as readonly [string, string, ...string[]]}
-        locations={locations as readonly [number, number, ...number[]]}
-        start={start}
-        end={end}>
+      <View>
         <Text style={[styles.label, styles.gradientSizer]}>
           {children}
         </Text>
-      </LinearGradient>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.labelGradientSlab, tiltStyle]}>
+          <LinearGradient
+            colors={colors as readonly [string, string, ...string[]]}
+            locations={locations as readonly [number, number, ...number[]]}
+            start={start}
+            end={end}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      </View>
     </MaskedView>
   );
 }
@@ -2771,6 +2793,15 @@ const styles = StyleSheet.create({
   },
   gradientSizer: {
     opacity: 0,
+  },
+  // The slab the tilt slides: 60pt of margin on every side of the text so
+  // the moving gradient can never show an edge inside the mask.
+  labelGradientSlab: {
+    position: 'absolute',
+    top: -60,
+    bottom: -60,
+    left: -60,
+    right: -60,
   },
   glyphBox: {
     width: 24,
