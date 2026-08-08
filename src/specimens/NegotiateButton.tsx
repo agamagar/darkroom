@@ -360,17 +360,17 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       // Lilac clay, lit: the surface carries the house hue and now also an
       // ambient sheen (the centre glow below) that drifts with the gyro's
       // focal shift — soft daylight moving over a matte object, not a lamp.
-      backgroundColor: '#4E4180',
-      borderColor: 'rgba(216, 205, 255, 0.14)',
+      backgroundColor: '#5C4EA0',
+      borderColor: 'rgba(222, 213, 255, 0.2)',
       boxShadow:
-        '-6px -8px 20px 0px rgba(206, 192, 255, 0.22), 8px 10px 24px 0px rgba(10, 4, 28, 0.65)',
+        '-6px -8px 22px 0px rgba(214, 203, 255, 0.32), 8px 10px 24px 0px rgba(10, 4, 28, 0.6)',
     },
     glow: {
       edge: 'center',
       color: '#C4B5FD',
-      core: '#EAE2FF',
-      rest: 0.34,
-      lit: 0.5,
+      core: '#F1EBFF',
+      rest: 0.52,
+      lit: 0.66,
       spread: 2.2,
     },
     carveInset: true,
@@ -528,6 +528,8 @@ export function NegotiateButton({
       }
     },
   );
+  /** Un-breathing press opacity, for variants that carry their own loop. */
+  const litPlainStyle = useAnimatedStyle(() => ({ opacity: press.value }));
   const litStyle = useAnimatedStyle(() => {
     const breath = reducedMotion
       ? 1
@@ -665,7 +667,13 @@ export function NegotiateButton({
         {spec.neonRing && (
           <>
             <NeonRing lit={false} />
-            <Animated.View pointerEvents="none" style={[styles.litLayer, litStyle]}>
+            {/* Plain press opacity, NOT the breathing litStyle: the sink loop
+                is neon's animation, and the system breath sat on top of it,
+                dimming the whole ring stack to 40% mid-cycle — which read as
+                the loop breaking. One animation per element. */}
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.litLayer, litPlainStyle]}>
               <NeonRing lit press={press} />
             </Animated.View>
           </>
@@ -1366,9 +1374,18 @@ function ChromeBase() {
 
 /** The travelling reflection. Its parent animates translateX + rotation. */
 function ChromeSheen() {
+  // The canvas itself is oversized, not merely the rect inside it: an SVG
+  // clips at its own bounds, so a frame-sized canvas showed its edge the
+  // moment the layer translated — which is exactly what the big-rect "fix"
+  // failed to address. 320pt of margin beats the worst case (150 tilt + 60
+  // sweep + 18deg rotation).
+  const M = 320;
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+      <Svg
+        width={FRAME.width + M * 2}
+        height={FRAME.height + M * 2}
+        style={{ position: 'absolute', left: -M, top: -M }}>
         <Defs>
           {/* The rect spans +/-320pt beyond the pill so its boundary can
               never enter the frame at any tilt (max 150pt) plus press sweep
@@ -1383,8 +1400,8 @@ function ChromeSheen() {
             <Stop offset="1" stopColor="#E2CFFF" stopOpacity={0} />
           </SvgLinearGradient>
         </Defs>
-        <Rect x={-320} y={-120} width={FRAME.width + 640}
-          height={FRAME.height + 240} fill="url(#chromeSheen)" />
+        <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+          fill="url(#chromeSheen)" />
       </Svg>
     </View>
   );
@@ -1419,8 +1436,9 @@ function BlueprintRing({
     const t = Easing.out(Easing.cubic)(travel.value);
     return {
       cx: x0 + (target - x0) * t,
-      // Rings live until the very end of the travel, then yield to the glow.
-      opacity: 0.45 * (1 - travel.value ** 3),
+      // Rings persist at their golden seats through the hold — dimmed to
+      // sit with the rendered glow, not erased by it.
+      opacity: 0.45 * (1 - 0.5 * travel.value),
     };
   });
   return (
@@ -1506,7 +1524,13 @@ function BlueprintChrome({ press }: { press: SharedValue<number> }) {
       });
     },
   );
-  const chromeFade = useAnimatedStyle(() => ({
+  // The silhouette stays through the hold (dimmed) so the converged rings
+  // still live inside a pill rather than floating over bare glow; only the
+  // corner handles — pure annotation — fade all the way out.
+  const silhouetteFade = useAnimatedStyle(() => ({
+    opacity: 1 - 0.55 * travel.value,
+  }));
+  const handleFade = useAnimatedStyle(() => ({
     opacity: 1 - travel.value,
   }));
 
@@ -1535,13 +1559,18 @@ function BlueprintChrome({ press }: { press: SharedValue<number> }) {
         </G>
       </Svg>
 
-      {/* Silhouette + handles fade as the press renders the button. */}
       <Animated.View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, chromeFade]}>
+        style={[StyleSheet.absoluteFill, silhouetteFade]}>
         <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
           <Rect x={f.x} y={f.y} width={f.w} height={f.h} rx={fr} fill="none"
             stroke={c} strokeOpacity={0.75} strokeWidth={1} />
+        </Svg>
+      </Animated.View>
+      <Animated.View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, handleFade]}>
+        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
           {handles.map(([hx, hy]) => (
             <Rect key={`${hx}-${hy}`} x={hx - 3} y={hy - 3} width={6} height={6}
               fill={theme.color.bg} stroke={c} strokeWidth={1} />
