@@ -1,13 +1,8 @@
-import * as Haptics from 'expo-haptics';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -40,24 +35,9 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(INITIAL_SELECTION);
   const { width, height } = useWindowDimensions();
 
-  // 1 = control pane tucked away (two-finger hold), 0 = docked split view.
-  const panelHidden = useSharedValue(0);
   // 1 = collapsed to the peeking handle strip (the handle toggles this).
   const panelCollapsed = useSharedValue(0);
 
-  // Two-finger tap-and-hold anywhere on the stage tucks the whole control
-  // pane away (and brings it back) — clean screenshots of a screen without
-  // bench chrome. Two fingers so it can never collide with a specimen press.
-  // (A Pan, not a LongPress — LongPress cannot require two pointers.)
-  const togglePanel = Gesture.Pan()
-    .minPointers(2)
-    .maxPointers(2)
-    .activateAfterLongPress(350)
-    .onStart(() => {
-      panelHidden.value = panelHidden.value === 0 ? 1 : 0;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    })
-    .runOnJS(true);
 
   // Block first paint until the design's families are in — a flash of the
   // system font on a fidelity bench defeats the bench.
@@ -75,11 +55,7 @@ export default function App() {
   // when the pane tucks away — the split in the split view.
   const stageStyle = useAnimatedStyle(() => ({
     paddingBottom: withTiming(
-      panelHidden.value === 1
-        ? 0
-        : panelCollapsed.value === 1
-          ? PANEL_PEEK
-          : PANEL_HEIGHT,
+      panelCollapsed.value === 1 ? PANEL_PEEK : PANEL_HEIGHT,
       { duration: 260 },
     ),
   }));
@@ -116,7 +92,6 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <StatusBar style="light" />
-      <GestureDetector gesture={togglePanel}>
         <Animated.View
           style={[
             styles.stage,
@@ -149,9 +124,8 @@ export default function App() {
           </>
         )}
         </Animated.View>
-      </GestureDetector>
 
-      <BenchPanel hidden={panelHidden} collapsed={panelCollapsed}>
+      <BenchPanel collapsed={panelCollapsed}>
         <SegmentedRow
           label="State"
           options={STATES}

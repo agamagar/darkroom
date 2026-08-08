@@ -38,6 +38,16 @@ export const TYPES = [
   'spotlight',
   'stitch',
   'comet',
+  'orbit',
+  'rain',
+  'equalizer',
+  'sonar',
+  'glitch',
+  'origami',
+  'scope',
+  'pixel',
+  'firefly',
+  'circuit',
 ] as const;
 export type Type = (typeof TYPES)[number];
 

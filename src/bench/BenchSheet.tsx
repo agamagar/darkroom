@@ -13,8 +13,8 @@ import { theme } from '../theme';
 /**
  * The bench's control pane — a docked split view with a collapsible handle.
  * The handle at the pane's top edge collapses it down to a peeking strip
- * (handle stays reachable) and expands it back; the two-finger hold still
- * tucks the pane away entirely for clean screenshots.
+ * (handle stays reachable) and expands it back; collapsing to the
+ * handle is also the clean-screenshot mode.
  */
 
 export const PANEL_HEIGHT = 460;
@@ -22,21 +22,14 @@ export const PANEL_HEIGHT = 460;
 export const PANEL_PEEK = 34;
 
 export function BenchPanel({
-  hidden,
   collapsed,
   children,
 }: {
-  hidden: SharedValue<number>;
   collapsed: SharedValue<number>;
   children: React.ReactNode;
 }) {
   const slide = useAnimatedStyle(() => {
-    const target =
-      hidden.value === 1
-        ? PANEL_HEIGHT + 40
-        : collapsed.value === 1
-          ? PANEL_HEIGHT - PANEL_PEEK
-          : 0;
+    const target = collapsed.value === 1 ? PANEL_HEIGHT - PANEL_PEEK : 0;
     return {
       transform: [
         {
