@@ -24,6 +24,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
+  ClipPath,
   Defs,
   Ellipse,
   G,
@@ -2136,15 +2137,23 @@ function CometSeg({
 
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 /**
- * Digital corruption, quantised and deterministic. Everything advances in
- * STEPS (12 per hold cycle), never glides — real glitches are discrete —
- * and every element is driven by a hash of (element, step), so the chaos
- * is reproducible frame-for-frame.
+ * Digital corruption, constructed rather than decorated.
  *
- * Layers, back to front: five shear slices with chromatic ghost copies
- * (300 left, 600 right, split proportional to the shear), a scatter of
- * corruption blocks flashing in and out, two tear lines that jump rows,
- * and a rare full-width flash (~1 step in 14).
+ * The realisation driving this rebuild: a glitch is not shapes ON an image,
+ * it is the image ITSELF mis-assembled. So glitch now has a signal — a
+ * horizontally-banded indigo fill — and the whole face is built from eight
+ * clipped slices of that signal. At rest every slice sits at zero offset
+ * and the fill is seamless; corruption is those same slices of CONTENT
+ * displacing sideways, each dragging faint chromatic ghosts.
+ *
+ * The rest of the grammar, from how codecs actually fail:
+ * - macroblocks: corruption blocks snap to an 8pt grid, and half are
+ *   DROPOUTS (dark, missing data) rather than highlights
+ * - bursts: a slow envelope (3 rolls per cycle) switches the whole system
+ *   between calm (25% amplitude) and violent — glitches breathe, they are
+ *   not uniformly chaotic
+ * - everything advances in 14 discrete steps per cycle, hash-driven,
+ *   reproducible frame-for-frame; nothing ever glides
  */
 function glitchHash(n: number): number {
   'worklet';
@@ -2152,67 +2161,77 @@ function glitchHash(n: number): number {
   return x - Math.floor(x);
 }
 
-const GLITCH_SLICES = [
-  { y: 4, h: 9 },
-  { y: 16, h: 13 },
-  { y: 30, h: 8 },
-  { y: 40, h: 12 },
-  { y: 54, h: 9 },
-];
+/** Irregular slice heights covering the pill exactly (sum 68). */
+const G_SLICES = (() => {
+  const hs = [10, 8, 12, 6, 10, 8, 9, 5];
+  let y = 0;
+  return hs.map((h) => {
+    const band = { y, h };
+    y += h;
+    return band;
+  });
+})();
 
-function GlitchSlice({
-  g, index, press, holdT,
-}: FxProps & { g: (typeof GLITCH_SLICES)[number]; index: number }) {
-  const mk = (layer: number, color: string, baseOp: number) => {
+/** One slice of the signal: clipped band, content shifts inside it. */
+function GlitchSliceV2({
+  band, index, press, holdT,
+}: FxProps & { band: (typeof G_SLICES)[number]; index: number }) {
+  const mk = (layer: number, opacity: number) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const props = useAnimatedProps(() => {
-      const step = Math.floor(holdT.value * 12);
-      const r = glitchHash(index * 91.17 + step * 13.7 + layer * 5.3);
-      const active = r < 0.62;
-      const shear = (r - 0.5) * 26 * press.value;
-      const split = layer === 0 ? 0 : layer === 1 ? -shear * 0.5 : shear * 0.5;
+    return useAnimatedProps(() => {
+      const step = Math.floor(holdT.value * 14);
+      const burst = glitchHash(Math.floor(holdT.value * 3) * 97.7);
+      const violence = burst < 0.5 ? 0.25 : 1;
+      const r = glitchHash(index * 91.17 + step * 13.7);
+      const active = r < 0.55;
+      const shear =
+        (r - 0.5) * 34 * press.value * violence * (active ? 1 : 0.1);
+      const chroma = layer === 0 ? 0 : (layer === 1 ? -1 : 1) * (2 + Math.abs(shear) * 0.5);
       return {
-        x: shear + split,
-        fillOpacity: press.value * (active ? baseOp : 0.04),
+        x: -40 + shear + chroma,
+        opacity: layer === 0 ? 1 : press.value * opacity * (active ? 1 : 0),
       };
     });
-    return props;
   };
-  const core = mk(0, '#5847D6', 0.5);
-  const ghostL = mk(1, '#A99BF5', 0.22);
-  const ghostR = mk(2, '#4636B8', 0.28);
+  const core = mk(0, 1);
+  const ghostA = mk(1, 0.3);
+  const ghostB = mk(2, 0.3);
   return (
-    <>
-      <AnimatedRect y={g.y} width={FRAME.width} height={g.h}
-        fill="#A99BF5" animatedProps={ghostL} />
-      <AnimatedRect y={g.y} width={FRAME.width} height={g.h}
-        fill="#4636B8" animatedProps={ghostR} />
-      <AnimatedRect y={g.y} width={FRAME.width} height={g.h}
-        fill="#5847D6" animatedProps={core} />
-    </>
+    <G clipPath={`url(#gclip${index})`}>
+      <AnimatedRect y={0} width={FRAME.width + 80} height={FRAME.height}
+        fill="url(#glitchSignal)" animatedProps={core} />
+      <AnimatedRect y={0} width={FRAME.width + 80} height={FRAME.height}
+        fill="url(#glitchGhostA)" animatedProps={ghostA} />
+      <AnimatedRect y={0} width={FRAME.width + 80} height={FRAME.height}
+        fill="url(#glitchGhostB)" animatedProps={ghostB} />
+    </G>
   );
 }
 
-const GLITCH_BLOCKS = Array.from({ length: 10 }, (_, i) => ({
-  x: ((0.5 + (i + 1) * 0.7548776662) % 1) * (FRAME.width - 24),
-  y: ((0.5 + (i + 1) * 0.5698402909) % 1) * (FRAME.height - 10),
-  w: 8 + ((i * 29.6) % 1) * 18,
-  h: 3 + ((i * 17.3) % 1) * 6,
+/** Macroblocks: 8pt-grid-aligned, half dropouts, half hot. */
+const G_BLOCKS = Array.from({ length: 12 }, (_, i) => ({
+  x: 8 * Math.floor(((0.5 + (i + 1) * 0.7548776662) % 1) * 33),
+  y: 8 * Math.floor(((0.5 + (i + 1) * 0.5698402909) % 1) * 8),
+  w: 8 * (1 + (i % 3)),
+  h: 8 * (1 + (i % 2)),
+  dropout: i % 2 === 0,
 }));
 
-function GlitchBlock({
+function GlitchMacroblock({
   b, index, press, holdT,
-}: FxProps & { b: (typeof GLITCH_BLOCKS)[number]; index: number }) {
+}: FxProps & { b: (typeof G_BLOCKS)[number]; index: number }) {
   const props = useAnimatedProps(() => {
-    const step = Math.floor(holdT.value * 12);
+    const step = Math.floor(holdT.value * 14);
+    const burst = glitchHash(Math.floor(holdT.value * 3) * 97.7);
+    const violence = burst < 0.5 ? 0.3 : 1;
     const r = glitchHash(index * 47.9 + step * 23.1);
     return {
-      fillOpacity: press.value * (r < 0.3 ? 0.55 + r : 0),
+      fillOpacity: press.value * violence * (r < 0.28 ? (b.dropout ? 0.85 : 0.5 + r) : 0),
     };
   });
   return (
     <AnimatedRect x={b.x} y={b.y} width={b.w} height={b.h}
-      fill="#CEC7FB" animatedProps={props} />
+      fill={b.dropout ? '#181140' : '#CEC7FB'} animatedProps={props} />
   );
 }
 
@@ -2220,24 +2239,28 @@ function GlitchTear({
   index, press, holdT,
 }: FxProps & { index: number }) {
   const props = useAnimatedProps(() => {
-    const step = Math.floor(holdT.value * 12);
+    const step = Math.floor(holdT.value * 14);
+    const burst = glitchHash(Math.floor(holdT.value * 3) * 97.7);
     const r = glitchHash(index * 71.3 + step * 31.7);
+    // Tears prefer slice boundaries — they are where the assembly fails.
+    const edges = [10, 18, 30, 36, 46, 54, 63];
+    const y = edges[Math.floor(r * edges.length)] ?? 34;
     return {
-      y: 2 + r * (FRAME.height - 4),
-      fillOpacity: press.value * (r < 0.75 ? 0.5 : 0),
+      y,
+      fillOpacity: press.value * (burst >= 0.5 && r < 0.7 ? 0.55 : 0),
     };
   });
   return (
-    <AnimatedRect x={0} width={FRAME.width} height={1.2}
+    <AnimatedRect x={0} width={FRAME.width} height={1}
       fill="#E7E3FD" animatedProps={props} />
   );
 }
 
 function GlitchFlash({ press, holdT }: FxProps) {
   const props = useAnimatedProps(() => {
-    const step = Math.floor(holdT.value * 12);
+    const step = Math.floor(holdT.value * 14);
     const r = glitchHash(step * 57.77);
-    return { fillOpacity: press.value * (r < 0.07 ? 0.16 : 0) };
+    return { fillOpacity: press.value * (r < 0.06 ? 0.14 : 0) };
   });
   return (
     <AnimatedRect width={FRAME.width} height={FRAME.height}
@@ -2249,11 +2272,38 @@ function GlitchFx(fxp: FxProps) {
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {GLITCH_SLICES.map((g, i) => (
-          <GlitchSlice key={i} g={g} index={i} {...fxp} />
+        <Defs>
+          {/* The signal: irregular horizontal bands, so displacement is
+              VISIBLE — a vertical-only gradient would shear invisibly. */}
+          <SvgLinearGradient id="glitchSignal" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#36298F" />
+            <Stop offset="0.16" stopColor="#5847D6" />
+            <Stop offset="0.27" stopColor="#271D66" />
+            <Stop offset="0.44" stopColor="#4636B8" />
+            <Stop offset="0.55" stopColor="#181140" />
+            <Stop offset="0.71" stopColor="#36298F" />
+            <Stop offset="0.84" stopColor="#6D5CF0" />
+            <Stop offset="1" stopColor="#271D66" />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="glitchGhostA" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#A99BF5" />
+            <Stop offset="1" stopColor="#A99BF5" />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="glitchGhostB" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#5847D6" />
+            <Stop offset="1" stopColor="#5847D6" />
+          </SvgLinearGradient>
+          {G_SLICES.map((band, i) => (
+            <ClipPath key={i} id={`gclip${i}`}>
+              <Rect x={0} y={band.y} width={FRAME.width} height={band.h} />
+            </ClipPath>
+          ))}
+        </Defs>
+        {G_SLICES.map((band, i) => (
+          <GlitchSliceV2 key={i} band={band} index={i} {...fxp} />
         ))}
-        {GLITCH_BLOCKS.map((b, i) => (
-          <GlitchBlock key={i} b={b} index={i} {...fxp} />
+        {G_BLOCKS.map((b, i) => (
+          <GlitchMacroblock key={i} b={b} index={i} {...fxp} />
         ))}
         <GlitchTear index={0} {...fxp} />
         <GlitchTear index={1} {...fxp} />
