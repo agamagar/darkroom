@@ -93,22 +93,13 @@ export type NegotiateButtonVariant =
   | 'blueprint'
   | 'aurora'
   | 'ripple'
-  | 'prism'
   | 'hologram'
   | 'starfield'
   | 'spotlight'
   | 'stitch'
   | 'comet'
-  | 'orbit'
-  | 'rain'
-  | 'equalizer'
-  | 'sonar'
   | 'glitch'
-  | 'origami'
-  | 'scope'
-  | 'pixel'
-  | 'firefly'
-  | 'circuit';
+  | 'pixel';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -189,22 +180,13 @@ type VariantSpec = {
   fx?:
     | 'aurora'
     | 'ripple'
-    | 'prism'
-    | 'hologram'
+      | 'hologram'
     | 'starfield'
     | 'spotlight'
     | 'stitch'
     | 'comet'
-    | 'orbit'
-    | 'rain'
-    | 'equalizer'
-    | 'sonar'
     | 'glitch'
-    | 'origami'
-    | 'scope'
-    | 'pixel'
-    | 'firefly'
-    | 'circuit';
+    | 'pixel';
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -488,13 +470,6 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     label: { kind: 'solid', color: '#F3F1FE' },
   },
 
-  /** Soap-film iridescence; the film's hues slide with the tilt. */
-  prism: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(243, 241, 254, 0.25)' },
-    fx: 'prism',
-    label: { kind: 'solid', color: '#181140' },
-  },
-
   /** A translucent projection: scanlines, chromatic edges, hold flicker. */
   hologram: {
     pill: { backgroundColor: 'rgba(169, 155, 245, 0.07)', borderWidth: 0 },
@@ -531,34 +506,6 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     label: { kind: 'gradient' },
   },
 
-  /** An atom: three orbital shells, electrons circling while held. */
-  orbit: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.12)' },
-    fx: 'orbit',
-    label: { kind: 'solid', color: '#E7E3FD' },
-  },
-
-  /** Suspended droplets; holding opens the sky. Tilt slants the fall. */
-  rain: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.14)' },
-    fx: 'rain',
-    label: { kind: 'solid', color: '#F3F1FE' },
-  },
-
-  /** Audio bars, flat at rest, dancing on deterministic harmonics held. */
-  equalizer: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.12)' },
-    fx: 'equalizer',
-    label: { kind: 'solid', color: '#F3F1FE' },
-  },
-
-  /** A scope sweep circling while held; blips flare as the beam passes. */
-  sonar: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.14)' },
-    fx: 'sonar',
-    label: { kind: 'solid', color: '#CEC7FB' },
-  },
-
   /** Clean at rest; pressing corrupts — slices shear and flicker. */
   glitch: {
     pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.14)' },
@@ -566,38 +513,10 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
     label: { kind: 'gradient' },
   },
 
-  /** Folded paper: facets catching the light as the phone tilts. */
-  origami: {
-    pill: { backgroundColor: '#181140', borderWidth: 0 },
-    fx: 'origami',
-    label: { kind: 'solid', color: '#F3F1FE' },
-  },
-
-  /** An oscilloscope: flatline at rest, pressing drives the signal. */
-  scope: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.12)' },
-    fx: 'scope',
-    label: { kind: 'solid', color: '#E7E3FD' },
-  },
-
   /** A coarse retro grid; pressing sends brightness waves across it. */
   pixel: {
     pill: { backgroundColor: '#181140', borderWidth: 0 },
     fx: 'pixel',
-    label: { kind: 'solid', color: '#F3F1FE' },
-  },
-
-  /** Perched glow-dots that wander lissajous paths and swarm while held. */
-  firefly: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.1)' },
-    fx: 'firefly',
-    label: { kind: 'solid', color: '#E7E3FD' },
-  },
-
-  /** A circuit board: faint traces, pulses running the lines while held. */
-  circuit: {
-    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.12)' },
-    fx: 'circuit',
     label: { kind: 'solid', color: '#F3F1FE' },
   },
 
@@ -1878,22 +1797,13 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
   switch (kind) {
     case 'aurora': return <AuroraFx {...fxp} />;
     case 'ripple': return <RippleFx {...fxp} />;
-    case 'prism': return <PrismFx {...fxp} />;
     case 'hologram': return <HologramFx {...fxp} />;
     case 'starfield': return <StarfieldFx {...fxp} />;
     case 'spotlight': return <SpotlightFx {...fxp} />;
     case 'stitch': return <StitchFx {...fxp} />;
     case 'comet': return <CometFx {...fxp} />;
-    case 'orbit': return <OrbitFx {...fxp} />;
-    case 'rain': return <RainFx {...fxp} />;
-    case 'equalizer': return <EqualizerFx {...fxp} />;
-    case 'sonar': return <SonarFx {...fxp} />;
     case 'glitch': return <GlitchFx {...fxp} />;
-    case 'origami': return <OrigamiFx {...fxp} />;
-    case 'scope': return <ScopeFx {...fxp} />;
     case 'pixel': return <PixelFx {...fxp} />;
-    case 'firefly': return <FireflyFx {...fxp} />;
-    case 'circuit': return <CircuitFx {...fxp} />;
   }
 }
 
@@ -1953,7 +1863,10 @@ function RippleRing({ index, press, holdT }: FxProps & { index: number }) {
       width: rx * 2,
       height: ry * 2,
       rx: Math.min(ry, rx),
-      strokeOpacity: press.value * 0.55 * (1 - grow),
+      // Reversed on direction: born invisible at the centre, gaining light
+      // as it expands — and the wrap is seamless for free, because a ring
+      // resets to zero size exactly when its opacity is zero.
+      strokeOpacity: press.value * 0.55 * grow,
     };
   });
   return (
@@ -1974,35 +1887,6 @@ function RippleFx(fxp: FxProps) {
   );
 }
 
-/** Soap-film hues on an oversized canvas, sliding with the tilt. */
-function PrismFx({ shift }: FxProps) {
-  const M = 90;
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: (shift?.x.value ?? 0) * 1.8 },
-      { translateY: (shift?.y.value ?? 0) * 0.6 },
-    ],
-  }));
-  return (
-    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
-      <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
-        style={{ position: 'absolute', left: -M, top: -M }}>
-        <Defs>
-          <SvgLinearGradient id="prismFilm" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#CEC7FB" stopOpacity={0.85} />
-            <Stop offset="0.28" stopColor="#6D5CF0" stopOpacity={0.85} />
-            <Stop offset="0.55" stopColor="#A99BF5" stopOpacity={0.85} />
-            <Stop offset="0.8" stopColor="#E7E3FD" stopOpacity={0.85} />
-            <Stop offset="1" stopColor="#CEC7FB" stopOpacity={0.85} />
-          </SvgLinearGradient>
-        </Defs>
-        <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
-          fill="url(#prismFilm)" />
-      </Svg>
-    </Animated.View>
-  );
-}
-
 /**
  * A projection with a refresh rate. Three motions while held, all off the
  * hold clock: the scanlines CRAWL upward (one 4pt period every eighth of a
@@ -2020,14 +1904,6 @@ function HologramFx({ press, holdT }: FxProps) {
   const crawl = useAnimatedStyle(() => ({
     transform: [{ translateY: -((holdT.value * 8) % 1) * 4 }],
   }));
-  // ONE rim at rest: both strokes sit at the same x and fuse into a single
-  // edge; only the press pulls them chromatically apart.
-  const edgeSplit = useAnimatedProps(() => ({
-    x: 1.5 + press.value * 1.6,
-  }));
-  const edgeSplit2 = useAnimatedProps(() => ({
-    x: 1.5 - press.value * 1.6,
-  }));
   const lines: number[] = [];
   for (let y = -4; y < FRAME.height + 4; y += 4) lines.push(y);
   return (
@@ -2041,16 +1917,6 @@ function HologramFx({ press, holdT }: FxProps) {
           ))}
         </Svg>
       </Animated.View>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        <AnimatedRect y={1.5} width={FRAME.width - 4.4}
-          height={FRAME.height - 3} rx={(FRAME.height - 3) / 2} fill="none"
-          stroke="#A99BF5" strokeOpacity={0.75} strokeWidth={1}
-          animatedProps={edgeSplit} />
-        <AnimatedRect y={1.5} width={FRAME.width - 4.4}
-          height={FRAME.height - 3} rx={(FRAME.height - 3) / 2} fill="none"
-          stroke="#6D5CF0" strokeOpacity={0.55} strokeWidth={1}
-          animatedProps={edgeSplit2} />
-      </Svg>
     </Animated.View>
   );
 }
@@ -2249,190 +2115,6 @@ function CometSeg({
 }
 
 const AnimatedLine = Animated.createAnimatedComponent(Line);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const AnimatedEllipseFx = Animated.createAnimatedComponent(Ellipse);
-const AnimatedPolygon = Animated.createAnimatedComponent(Polygon);
-
-const CXF = FRAME.width / 2;
-const CYF = FRAME.height / 2;
-
-/** An atom: three shells, one electron each; holding spins the shells. */
-const ORBITS = [
-  { rx: 104, ry: 26, revs: 2, phase: 0.1 },
-  { rx: 74, ry: 18, revs: 3, phase: 0.55 },
-  { rx: 46, ry: 11, revs: 4, phase: 0.8 },
-];
-
-function OrbitShell({
-  o, press, holdT,
-}: FxProps & { o: (typeof ORBITS)[number] }) {
-  const electron = useAnimatedProps(() => {
-    const a = 2 * Math.PI * (o.phase + holdT.value * o.revs);
-    return {
-      cx: CXF + o.rx * Math.cos(a),
-      cy: CYF + o.ry * Math.sin(a),
-      fillOpacity: 0.45 + press.value * 0.55,
-    };
-  });
-  const ringLit = useAnimatedProps(() => ({
-    strokeOpacity: press.value * 0.45,
-  }));
-  return (
-    <>
-      <Ellipse cx={CXF} cy={CYF} rx={o.rx} ry={o.ry} fill="none"
-        stroke="#36298F" strokeOpacity={0.85} strokeWidth={1} />
-      <AnimatedEllipseFx cx={CXF} cy={CYF} rx={o.rx} ry={o.ry} fill="none"
-        stroke="#6D5CF0" strokeWidth={1} animatedProps={ringLit} />
-      <AnimatedCircle r={2.3} fill="#CEC7FB" animatedProps={electron} />
-    </>
-  );
-}
-
-function OrbitFx(fxp: FxProps) {
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {ORBITS.map((o, i) => (
-          <OrbitShell key={i} o={o} {...fxp} />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
-/** Fourteen droplets, R2-spread; suspended at rest, falling while held. */
-const DROPS = Array.from({ length: 14 }, (_, i) => ({
-  x: ((0.5 + (i + 1) * 0.7548776662) % 1) * FRAME.width,
-  phase: (i * 0.618034) % 1,
-  depth: 0.5 + ((i + 1) * 0.5698402909 % 1) * 0.8,
-}));
-
-function RainDrop({
-  d, press, holdT, shift,
-}: FxProps & { d: (typeof DROPS)[number] }) {
-  const props = useAnimatedProps(() => {
-    const t = (holdT.value * (1.2 + d.depth) + d.phase) % 1;
-    const y = t * (FRAME.height + 24) - 12;
-    const len = (4 + d.depth * 6) * (0.5 + press.value * 0.5);
-    const slant = (shift?.x.value ?? 0) * 0.12;
-    return {
-      x1: d.x,
-      y1: y,
-      x2: d.x + slant,
-      y2: y + len,
-      strokeOpacity: (0.2 + press.value * 0.5) * d.depth,
-    };
-  });
-  return (
-    <AnimatedLine stroke="#A99BF5" strokeWidth={1.1} strokeLinecap="round"
-      animatedProps={props} />
-  );
-}
-
-function RainFx(fxp: FxProps) {
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {DROPS.map((d, i) => (
-          <RainDrop key={i} d={d} {...fxp} />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
-/** Thirteen bars on two deterministic harmonics — flat until held. */
-const EQ_BARS = Array.from({ length: 13 }, (_, i) => ({
-  x: 9 + i * 20,
-  f1: 2 + (i % 3),
-  f2: 3 + ((i * 7) % 4),
-  p1: (i * 0.618034) % 1,
-  p2: (i * 0.7548777) % 1,
-}));
-
-function EqBar({
-  bar, press, holdT,
-}: FxProps & { bar: (typeof EQ_BARS)[number] }) {
-  const props = useAnimatedProps(() => {
-    const wave =
-      5 * Math.sin(2 * Math.PI * (holdT.value * bar.f1 + bar.p1)) +
-      4 * Math.sin(2 * Math.PI * (holdT.value * bar.f2 + bar.p2));
-    const hgt = Math.max(3, 4 + press.value * (10 + wave));
-    return { y: 56 - hgt, height: hgt };
-  });
-  return (
-    <AnimatedRect x={bar.x} width={14} rx={2} fill="#8B7CF6"
-      fillOpacity={0.85} animatedProps={props} />
-  );
-}
-
-function EqualizerFx(fxp: FxProps) {
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {EQ_BARS.map((bar, i) => (
-          <EqBar key={i} bar={bar} {...fxp} />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
-/** Sweep circling twice per hold cycle; blips flare as the beam passes. */
-const BLIPS = Array.from({ length: 4 }, (_, i) => ({
-  angle: ((i + 1) * 0.618034 % 1) * 2 * Math.PI,
-  r: 10 + ((i + 1) * 0.7548777 % 1) * 16,
-}));
-
-function SonarBeam({ press, holdT }: FxProps) {
-  const props = useAnimatedProps(() => {
-    const a = 2 * Math.PI * ((holdT.value * 2) % 1);
-    return {
-      x2: CXF + Math.cos(a) * 30,
-      y2: CYF + Math.sin(a) * 30,
-      strokeOpacity: 0.25 + press.value * 0.65,
-    };
-  });
-  return (
-    <AnimatedLine x1={CXF} y1={CYF} stroke="#A99BF5" strokeWidth={1.6}
-      strokeLinecap="round" animatedProps={props} />
-  );
-}
-
-function SonarBlip({
-  blip, press, holdT,
-}: FxProps & { blip: (typeof BLIPS)[number] }) {
-  const props = useAnimatedProps(() => {
-    const a = 2 * Math.PI * ((holdT.value * 2) % 1);
-    let diff = Math.abs(a - blip.angle) % (2 * Math.PI);
-    if (diff > Math.PI) diff = 2 * Math.PI - diff;
-    const flare = Math.max(0, 1 - diff * 1.6) * press.value;
-    return { fillOpacity: 0.18 + flare * 0.82 };
-  });
-  return (
-    <AnimatedCircle cx={CXF + Math.cos(blip.angle) * blip.r}
-      cy={CYF + Math.sin(blip.angle) * blip.r} r={2}
-      fill="#CEC7FB" animatedProps={props} />
-  );
-}
-
-function SonarFx(fxp: FxProps) {
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        <Circle cx={CXF} cy={CYF} r={14} fill="none" stroke="#36298F"
-          strokeOpacity={0.9} strokeWidth={1} />
-        <Circle cx={CXF} cy={CYF} r={27} fill="none" stroke="#36298F"
-          strokeOpacity={0.6} strokeWidth={1} />
-        <SonarBeam {...fxp} />
-        {BLIPS.map((blip, i) => (
-          <SonarBlip key={i} blip={blip} {...fxp} />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
 /** Three slices that shear and flicker only under the press. */
 const GLITCH_SLICES = [
   { y: 8, h: 14, f: 9, p: 0.1 },
@@ -2472,70 +2154,6 @@ function GlitchFx(fxp: FxProps) {
   );
 }
 
-/** Six paper facets; tilt is the light moving across the folds. */
-const FACETS = Array.from({ length: 6 }, (_, i) => {
-  const x0 = 4 + i * 44;
-  const up = i % 2 === 0;
-  return {
-    points: up
-      ? `${x0},58 ${x0 + 22},10 ${x0 + 44},58`
-      : `${x0},10 ${x0 + 22},58 ${x0 + 44},10`,
-    fill: ['#4636B8', '#36298F', '#5847D6', '#271D66', '#4636B8', '#36298F'][i],
-    dir: up ? 1 : -1,
-  };
-});
-
-function Facet({
-  facet, press, shift,
-}: FxProps & { facet: (typeof FACETS)[number] }) {
-  const props = useAnimatedProps(() => {
-    const lean = (shift?.x.value ?? 0) / 40;
-    return {
-      fillOpacity: Math.min(
-        1,
-        Math.max(0.35, 0.7 + lean * facet.dir * 0.3 + press.value * 0.2),
-      ),
-    };
-  });
-  return <AnimatedPolygon points={facet.points} fill={facet.fill} animatedProps={props} />;
-}
-
-function OrigamiFx(fxp: FxProps) {
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {FACETS.map((facet, i) => (
-          <Facet key={i} facet={facet} {...fxp} />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
-/** Oscilloscope trace: flatline at rest, the press drives the signal. */
-function ScopeFx({ press, holdT }: FxProps) {
-  const props = useAnimatedProps(() => {
-    const A = 2 + press.value * 15;
-    let d = `M 12 ${CYF}`;
-    for (let i = 1; i <= 26; i++) {
-      const x = 12 + i * 9.5;
-      const y = CYF + A * Math.sin(x * 0.09 + holdT.value * 2 * Math.PI * 3);
-      d += ` L ${x} ${y}`;
-    }
-    return { d };
-  });
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        <Line x1={12} y1={CYF} x2={260} y2={CYF} stroke="#271D66"
-          strokeWidth={1} />
-        <AnimatedPath stroke="#A99BF5" strokeWidth={1.6} fill="none"
-          strokeLinecap="round" strokeLinejoin="round" animatedProps={props} />
-      </Svg>
-    </View>
-  );
-}
-
 /** An 8x2 grid of coarse pixels; waves of brightness cross it held. */
 const PIXELS = Array.from({ length: 16 }, (_, i) => ({
   col: i % 8,
@@ -2572,89 +2190,6 @@ function PixelFx(fxp: FxProps) {
   );
 }
 
-/** Seven fireflies on lissajous paths; holding wakes and gathers them. */
-const FLIES = Array.from({ length: 7 }, (_, i) => ({
-  ax: 24 + ((i + 1) * 0.7548777 % 1) * 96,
-  ay: 8 + ((i + 1) * 0.5698403 % 1) * 18,
-  f1: 1 + (i % 3),
-  f2: 2 + ((i * 5) % 3),
-  p1: (i * 0.618034) % 1,
-  p2: (i * 0.381966) % 1,
-}));
-
-function Firefly({
-  fly, press, holdT,
-}: FxProps & { fly: (typeof FLIES)[number] }) {
-  const props = useAnimatedProps(() => {
-    const gather = 1 - press.value * 0.45;
-    const x = CXF + fly.ax * gather *
-      Math.sin(2 * Math.PI * (fly.f1 * holdT.value + fly.p1));
-    const y = CYF + fly.ay * gather *
-      Math.sin(2 * Math.PI * (fly.f2 * holdT.value + fly.p2));
-    const pulse = 0.6 + 0.4 * Math.sin(2 * Math.PI * (holdT.value * 3 + fly.p1));
-    return {
-      cx: x,
-      cy: y,
-      fillOpacity: (0.3 + press.value * 0.7) * pulse,
-    };
-  });
-  return <AnimatedCircle r={1.9} fill="#E7E3FD" animatedProps={props} />;
-}
-
-function FireflyFx(fxp: FxProps) {
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {FLIES.map((fly, i) => (
-          <Firefly key={i} fly={fly} {...fxp} />
-        ))}
-      </Svg>
-    </View>
-  );
-}
-
-/** Board traces with pulses running the lines while held. */
-const TRACES = [
-  { d: 'M 14 20 H 92 V 44 H 150', len: 226 },
-  { d: 'M 258 16 H 182 V 36 H 122', len: 220 },
-  { d: 'M 42 52 H 132 V 28 H 202', len: 238 },
-];
-
-function TracePulse({
-  trace, press, holdT,
-}: FxProps & { trace: (typeof TRACES)[number] }) {
-  const props = useAnimatedProps(() => ({
-    strokeDashoffset: -((holdT.value * 2) % 1) * (trace.len + 8),
-    strokeOpacity: press.value,
-  }));
-  return (
-    <AnimatedPath d={trace.d} stroke="#CEC7FB" strokeWidth={1.8} fill="none"
-      strokeLinecap="round" strokeDasharray={`8 ${trace.len}`}
-      animatedProps={props} />
-  );
-}
-
-function CircuitFx(fxp: FxProps) {
-  return (
-    <View pointerEvents="none" style={styles.glowLayer}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {TRACES.map((trace, i) => (
-          <Path key={`t${i}`} d={trace.d} stroke="#4636B8" strokeWidth={1.2}
-            fill="none" strokeOpacity={0.9} strokeLinecap="round" />
-        ))}
-        <Circle cx={14} cy={20} r={2.2} fill="#5847D6" />
-        <Circle cx={150} cy={44} r={2.2} fill="#5847D6" />
-        <Circle cx={258} cy={16} r={2.2} fill="#5847D6" />
-        <Circle cx={122} cy={36} r={2.2} fill="#5847D6" />
-        <Circle cx={42} cy={52} r={2.2} fill="#5847D6" />
-        <Circle cx={202} cy={28} r={2.2} fill="#5847D6" />
-        {TRACES.map((trace, i) => (
-          <TracePulse key={i} trace={trace} {...fxp} />
-        ))}
-      </Svg>
-    </View>
-  );
-}
 
 
 /**
