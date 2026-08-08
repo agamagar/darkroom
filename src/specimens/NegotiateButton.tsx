@@ -585,6 +585,11 @@ export function NegotiateButton({
   // 0 = at rest, 1 = held down. One value drives both the scale and the glow
   // so they can never disagree about the button's state.
   const press = useSharedValue(forcePressed ? 1 : 0);
+  // Where the finger is, in pill coordinates. Captured on press-in and
+  // tracked through the hold, for effects that respond to the touch POINT
+  // rather than just its existence.
+  const touchX = useSharedValue(FRAME.width / 2);
+  const touchY = useSharedValue(FRAME.height / 2);
   const reducedMotion = useReducedMotion();
 
   /**
@@ -734,7 +739,9 @@ export function NegotiateButton({
         pressRetentionOffset={{ top: 120, left: 120, right: 120, bottom: 120 }}
         delayLongPress={1000000}
         onPress={onPress}
-        onPressIn={() => {
+        onPressIn={(e) => {
+          touchX.value = e.nativeEvent.locationX;
+          touchY.value = e.nativeEvent.locationY;
           if (forcePressed) return;
           press.value = withTiming(1, { duration: PRESS_IN_MS });
           if (haptics) {
@@ -746,6 +753,11 @@ export function NegotiateButton({
         onPressOut={() => {
           if (forcePressed) return;
           press.value = withTiming(0, { duration: PRESS_OUT_MS });
+        }}
+        onTouchMove={(e) => {
+          // The lit area follows the finger as it drifts inside the hold.
+          touchX.value = e.nativeEvent.locationX;
+          touchY.value = e.nativeEvent.locationY;
         }}
         style={[styles.pill, spec.pill, disabled && styles.pillDisabled]}>
         {spec.violetBase && <VioletBase />}
@@ -829,7 +841,8 @@ export function NegotiateButton({
           </Animated.View>
         )}
         {spec.fx && (
-          <VariantFx kind={spec.fx} press={press} holdT={holdT} shift={glowShift} />
+          <VariantFx kind={spec.fx} press={press} holdT={holdT}
+            shift={glowShift} touch={{ x: touchX, y: touchY }} />
         )}
         {spec.mesh && (
           <>
@@ -1796,6 +1809,7 @@ type FxProps = {
   press: SharedValue<number>;
   holdT: SharedValue<number>;
   shift?: { x: SharedValue<number>; y: SharedValue<number> };
+  touch?: { x: SharedValue<number>; y: SharedValue<number> };
 };
 
 /** Router for the bespoke effect layers. One renderer per physics. */
@@ -2250,28 +2264,35 @@ function GlitchFx(fxp: FxProps) {
 }
 
 /**
- * A 16x4 grid of pixels (64 cells at 15pt). While held, each cell resolves
- * a hash of (cell, step) — eight re-rolls per hold cycle — so the lit
- * pattern is RANDOM but deterministic, a true static-noise shimmer rather
- * than the old travelling diagonal wave.
+ * A 20x5 grid (100 cells at 12pt). The pixels light around the TOUCH, not
+ * randomly: each cell's brightness falls off with its distance from the
+ * finger (radius breathing on the hold clock), the lit region follows the
+ * finger as it drifts, and a per-step hash shimmers the cells inside the
+ * halo so the area reads as live static rather than a flat disc.
  */
-const PIXELS = Array.from({ length: 64 }, (_, i) => ({
-  col: i % 16,
-  row: Math.floor(i / 16),
+const PIXELS = Array.from({ length: 100 }, (_, i) => ({
+  col: i % 20,
+  row: Math.floor(i / 20),
 }));
 
 function Pixel({
-  px, index, press, holdT,
+  px, index, press, holdT, touch,
 }: FxProps & { px: (typeof PIXELS)[number]; index: number }) {
+  const cx = 1.6 + px.col * 13.6 + 6;
+  const cy = 0.8 + px.row * 13.6 + 6;
   const props = useAnimatedProps(() => {
+    const tx = touch?.x.value ?? FRAME.width / 2;
+    const ty = touch?.y.value ?? FRAME.height / 2;
+    const d = Math.hypot(cx - tx, cy - ty);
+    const radius = 48 + 12 * Math.sin(holdT.value * 2 * Math.PI * 2);
+    const fall = Math.max(0, 1 - d / radius);
     const step = Math.floor(holdT.value * 8);
-    const r = glitchHash(index * 12.9898 + step * 78.233);
-    const lit = r < 0.28 ? 0.6 + r : 0;
-    return { fillOpacity: 0.07 + press.value * lit };
+    const shimmer = 0.6 + 0.4 * glitchHash(index * 12.9898 + step * 78.233);
+    return { fillOpacity: 0.07 + press.value * fall * shimmer * 0.8 };
   });
   return (
-    <AnimatedRect x={2 + px.col * 17} y={1 + px.row * 17} width={15}
-      height={15} rx={2} fill="#8B7CF6" animatedProps={props} />
+    <AnimatedRect x={1.6 + px.col * 13.6} y={0.8 + px.row * 13.6} width={12}
+      height={12} rx={2} fill="#8B7CF6" animatedProps={props} />
   );
 }
 
