@@ -2476,12 +2476,15 @@ function StampFx(fxp: FxProps) {
  * peeking at the base. Pressing wets the glaze — the bloom tightens and
  * brightens, gloss rising under the finger.
  */
-const CERAMIC_SPECKLES = Array.from({ length: 90 }, (_, i) => ({
+// Vase-06 density: a heavy, salt-crusted firing. More flecks, slightly
+// smaller on average so the crowd reads as texture rather than polka dots,
+// and a third of them pale.
+const CERAMIC_SPECKLES = Array.from({ length: 220 }, (_, i) => ({
   x: ((0.5 + (i + 1) * 0.7548776662) % 1) * (FRAME.width - 8) + 4,
   y: ((0.5 + (i + 1) * 0.5698402909) % 1) * (FRAME.height - 8) + 4,
-  r: 0.4 + ((i * 23.6068) % 1) * 0.9,
-  o: 0.15 + ((i * 41.4214) % 1) * 0.45,
-  pale: i % 4 === 0,
+  r: 0.35 + ((i * 23.6068) % 1) * 0.75,
+  o: 0.14 + ((i * 41.4214) % 1) * 0.42,
+  pale: i % 3 === 0,
 }));
 
 function CeramicSheen({ press, shift }: FxProps) {
