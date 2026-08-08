@@ -2115,62 +2115,157 @@ function CometSeg({
 }
 
 const AnimatedLine = Animated.createAnimatedComponent(Line);
-/** Three slices that shear and flicker only under the press. */
+/**
+ * Digital corruption, quantised and deterministic. Everything advances in
+ * STEPS (12 per hold cycle), never glides — real glitches are discrete —
+ * and every element is driven by a hash of (element, step), so the chaos
+ * is reproducible frame-for-frame.
+ *
+ * Layers, back to front: five shear slices with chromatic ghost copies
+ * (300 left, 600 right, split proportional to the shear), a scatter of
+ * corruption blocks flashing in and out, two tear lines that jump rows,
+ * and a rare full-width flash (~1 step in 14).
+ */
+function glitchHash(n: number): number {
+  'worklet';
+  const x = Math.sin(n) * 43758.5453;
+  return x - Math.floor(x);
+}
+
 const GLITCH_SLICES = [
-  { y: 8, h: 14, f: 9, p: 0.1 },
-  { y: 27, h: 14, f: 13, p: 0.5 },
-  { y: 46, h: 14, f: 11, p: 0.8 },
+  { y: 4, h: 9 },
+  { y: 16, h: 13 },
+  { y: 30, h: 8 },
+  { y: 40, h: 12 },
+  { y: 54, h: 9 },
 ];
 
 function GlitchSlice({
-  g, press, holdT,
-}: FxProps & { g: (typeof GLITCH_SLICES)[number] }) {
-  const style = useAnimatedStyle(() => {
-    const saw = Math.sin(2 * Math.PI * (holdT.value * g.f + g.p));
-    // Quantised shear: slices snap between offsets, no smooth glide.
-    const step = saw > 0.4 ? 7 : saw < -0.4 ? -7 : 0;
+  g, index, press, holdT,
+}: FxProps & { g: (typeof GLITCH_SLICES)[number]; index: number }) {
+  const mk = (layer: number, color: string, baseOp: number) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const props = useAnimatedProps(() => {
+      const step = Math.floor(holdT.value * 12);
+      const r = glitchHash(index * 91.17 + step * 13.7 + layer * 5.3);
+      const active = r < 0.62;
+      const shear = (r - 0.5) * 26 * press.value;
+      const split = layer === 0 ? 0 : layer === 1 ? -shear * 0.5 : shear * 0.5;
+      return {
+        x: shear + split,
+        fillOpacity: press.value * (active ? baseOp : 0.04),
+      };
+    });
+    return props;
+  };
+  const core = mk(0, '#5847D6', 0.5);
+  const ghostL = mk(1, '#A99BF5', 0.22);
+  const ghostR = mk(2, '#4636B8', 0.28);
+  return (
+    <>
+      <AnimatedRect y={g.y} width={FRAME.width} height={g.h}
+        fill="#A99BF5" animatedProps={ghostL} />
+      <AnimatedRect y={g.y} width={FRAME.width} height={g.h}
+        fill="#4636B8" animatedProps={ghostR} />
+      <AnimatedRect y={g.y} width={FRAME.width} height={g.h}
+        fill="#5847D6" animatedProps={core} />
+    </>
+  );
+}
+
+const GLITCH_BLOCKS = Array.from({ length: 10 }, (_, i) => ({
+  x: ((0.5 + (i + 1) * 0.7548776662) % 1) * (FRAME.width - 24),
+  y: ((0.5 + (i + 1) * 0.5698402909) % 1) * (FRAME.height - 10),
+  w: 8 + ((i * 29.6) % 1) * 18,
+  h: 3 + ((i * 17.3) % 1) * 6,
+}));
+
+function GlitchBlock({
+  b, index, press, holdT,
+}: FxProps & { b: (typeof GLITCH_BLOCKS)[number]; index: number }) {
+  const props = useAnimatedProps(() => {
+    const step = Math.floor(holdT.value * 12);
+    const r = glitchHash(index * 47.9 + step * 23.1);
     return {
-      transform: [{ translateX: step * press.value }],
-      opacity: press.value * (saw > -0.7 ? 0.5 : 0.12),
+      fillOpacity: press.value * (r < 0.3 ? 0.55 + r : 0),
     };
   });
   return (
-    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
-      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        <Rect x={0} y={g.y} width={FRAME.width} height={g.h}
-          fill="#5847D6" fillOpacity={0.5} />
-      </Svg>
-    </Animated.View>
+    <AnimatedRect x={b.x} y={b.y} width={b.w} height={b.h}
+      fill="#CEC7FB" animatedProps={props} />
+  );
+}
+
+function GlitchTear({
+  index, press, holdT,
+}: FxProps & { index: number }) {
+  const props = useAnimatedProps(() => {
+    const step = Math.floor(holdT.value * 12);
+    const r = glitchHash(index * 71.3 + step * 31.7);
+    return {
+      y: 2 + r * (FRAME.height - 4),
+      fillOpacity: press.value * (r < 0.75 ? 0.5 : 0),
+    };
+  });
+  return (
+    <AnimatedRect x={0} width={FRAME.width} height={1.2}
+      fill="#E7E3FD" animatedProps={props} />
+  );
+}
+
+function GlitchFlash({ press, holdT }: FxProps) {
+  const props = useAnimatedProps(() => {
+    const step = Math.floor(holdT.value * 12);
+    const r = glitchHash(step * 57.77);
+    return { fillOpacity: press.value * (r < 0.07 ? 0.16 : 0) };
+  });
+  return (
+    <AnimatedRect width={FRAME.width} height={FRAME.height}
+      fill="#F3F1FE" animatedProps={props} />
   );
 }
 
 function GlitchFx(fxp: FxProps) {
   return (
-    <>
-      {GLITCH_SLICES.map((g, i) => (
-        <GlitchSlice key={i} g={g} {...fxp} />
-      ))}
-    </>
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {GLITCH_SLICES.map((g, i) => (
+          <GlitchSlice key={i} g={g} index={i} {...fxp} />
+        ))}
+        {GLITCH_BLOCKS.map((b, i) => (
+          <GlitchBlock key={i} b={b} index={i} {...fxp} />
+        ))}
+        <GlitchTear index={0} {...fxp} />
+        <GlitchTear index={1} {...fxp} />
+        <GlitchFlash {...fxp} />
+      </Svg>
+    </View>
   );
 }
 
-/** An 8x2 grid of coarse pixels; waves of brightness cross it held. */
-const PIXELS = Array.from({ length: 16 }, (_, i) => ({
-  col: i % 8,
-  row: Math.floor(i / 8),
+/**
+ * A 16x4 grid of pixels (64 cells at 15pt). While held, each cell resolves
+ * a hash of (cell, step) — eight re-rolls per hold cycle — so the lit
+ * pattern is RANDOM but deterministic, a true static-noise shimmer rather
+ * than the old travelling diagonal wave.
+ */
+const PIXELS = Array.from({ length: 64 }, (_, i) => ({
+  col: i % 16,
+  row: Math.floor(i / 16),
 }));
 
 function Pixel({
-  px, press, holdT,
-}: FxProps & { px: (typeof PIXELS)[number] }) {
+  px, index, press, holdT,
+}: FxProps & { px: (typeof PIXELS)[number]; index: number }) {
   const props = useAnimatedProps(() => {
-    const t = (holdT.value * 2 + (px.col + px.row) * 0.09) % 1;
-    const lit = t < 0.2 ? 1 : 0;
-    return { fillOpacity: 0.06 + press.value * lit * 0.55 };
+    const step = Math.floor(holdT.value * 8);
+    const r = glitchHash(index * 12.9898 + step * 78.233);
+    const lit = r < 0.28 ? 0.6 + r : 0;
+    return { fillOpacity: 0.07 + press.value * lit };
   });
   return (
-    <AnimatedRect x={8 + px.col * 33} y={6 + px.row * 30} width={29}
-      height={26} rx={3} fill="#8B7CF6" animatedProps={props} />
+    <AnimatedRect x={2 + px.col * 17} y={1 + px.row * 17} width={15}
+      height={15} rx={2} fill="#8B7CF6" animatedProps={props} />
   );
 }
 
@@ -2179,18 +2274,12 @@ function PixelFx(fxp: FxProps) {
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         {PIXELS.map((px, i) => (
-          <Rect key={`b${i}`} x={8 + px.col * 33} y={6 + px.row * 30}
-            width={29} height={26} rx={3} fill="#271D66" fillOpacity={0.55} />
-        ))}
-        {PIXELS.map((px, i) => (
-          <Pixel key={i} px={px} {...fxp} />
+          <Pixel key={i} px={px} index={i} {...fxp} />
         ))}
       </Svg>
     </View>
   );
 }
-
-
 
 /**
  * The liquid-UI halftone: a quiet dot grid over the pill, as on the
