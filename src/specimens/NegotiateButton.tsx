@@ -270,18 +270,20 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
       // Sharper vessel: a crisp 1pt lilac rim instead of the soft hairline.
       borderWidth: 1,
       borderColor: 'rgba(214, 204, 255, 0.32)',
-      boxShadow: `inset 0px 0px 30px 0px rgba(109, 92, 240, 0.5), 0px 4px 32px 0px rgba(109, 92, 240, 0.28)`,
+      boxShadow: `inset 0px 0px 22px 0px rgba(109, 92, 240, 0.55), 0px 4px 32px 0px rgba(109, 92, 240, 0.28)`,
     },
     emberPress: true,
     glow: {
       edge: 'center',
       color: theme.color.glow,
       core: theme.color.indigo400,
-      rest: 0.9,
-      lit: 1,
-      // Wider than the pill on both axes: the falloff gets clipped by the
-      // edge rather than dying visibly inside it.
-      spread: 2.4,
+      // Dimmer and tighter than before: the centre sat under the label at
+      // near-full brightness and washed the text out. The pool now peaks at
+      // 0.72 and hugs a smaller footprint, so it reads hot AND the label
+      // reads at all.
+      rest: 0.72,
+      lit: 0.85,
+      spread: 1.9,
     },
     mesh: true,
     label: { kind: 'solid', color: '#F5F0EC' },
@@ -938,8 +940,11 @@ function GlowWash({
   // Shifting the focal point instead keeps the lit area pinned and just
   // slides the hotspot inside it, which is also what a moving light does.
   const focal = useAnimatedProps(() => {
-    const dx = shift ? shift.x.value / (geom.rx * 2) : 0;
-    const dy = shift ? shift.y.value / (geom.ry * 2) : 0;
+    // 2.2x gain: normalising the tilt against the ellipse's full diameter
+    // made the focal swing ~12% on the broad washes — real but invisible on
+    // a soft gradient, which is why gradient/eclipse/ember read as inert.
+    const dx = shift ? (shift.x.value / (geom.rx * 2)) * 2.2 : 0;
+    const dy = shift ? (shift.y.value / (geom.ry * 2)) * 2.2 : 0;
     return {
       fx: `${(0.5 + dx) * 100}%`,
       fy: `${(0.5 + dy) * 100}%`,
@@ -1076,15 +1081,18 @@ function GradientBorderRing() {
  * washes move their focal point instead of translating.
  */
 const THROW_STOPS: [number, number][] = [
+  // Stretched deeper than the measured render on purpose: the light now
+  // descends most of the face before the bottom reflection picks up, so the
+  // dished surface reads as one continuous form under one lamp — bigger,
+  // softer, and with more room for the tilt to visibly re-aim it.
   [0, 0.72],
-  [0.132, 0.48],
-  [0.25, 0.29],
-  [0.368, 0.148],
-  [0.485, 0.054],
-  [0.603, 0.018],
-  [0.72, 0.045],
-  [0.838, 0.135],
-  [1, 0.27],
+  [0.18, 0.5],
+  [0.35, 0.32],
+  [0.52, 0.18],
+  [0.68, 0.09],
+  [0.8, 0.05],
+  [0.88, 0.08],
+  [1, 0.22],
 ];
 
 const AnimatedSvgLinearGradient =
@@ -1099,8 +1107,8 @@ function InsetThrow({
     // Lean is expressed as a fraction of the frame, then halved: a full-tilt
     // 30pt shift swings the axis about 5 degrees, which is plenty on a band
     // this soft.
-    const dx = shift ? shift.x.value / FRAME.width / 2 : 0;
-    const dy = shift ? shift.y.value / FRAME.height / 2 : 0;
+    const dx = shift ? shift.x.value / FRAME.width / 1.3 : 0;
+    const dy = shift ? shift.y.value / FRAME.height / 1.3 : 0;
     return {
       x1: 0.5 + dx,
       y1: dy,
@@ -1737,12 +1745,13 @@ function MoltenSpark() {
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         <Defs>
           <RadialGradient id="moltenSpark" cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0" stopColor="#F2ECFF" stopOpacity={0.55} />
+            <Stop offset="0" stopColor="#F2ECFF" stopOpacity={0.32} />
             <Stop offset="0.45" stopColor={theme.color.indigo400} stopOpacity={0.2} />
             <Stop offset="1" stopColor={theme.color.indigo400} stopOpacity={0} />
           </RadialGradient>
         </Defs>
-        <Ellipse cx={FRAME.width / 2} cy={FRAME.height / 2} rx={46} ry={22}
+        {/* Below the label band: the hot point reads without fighting text. */}
+        <Ellipse cx={FRAME.width / 2} cy={47} rx={38} ry={15}
           fill="url(#moltenSpark)" />
       </Svg>
     </View>
@@ -2154,7 +2163,7 @@ function DotMesh() {
         width={FRAME.width}
         height={FRAME.height}
         style={styles.glowSvg}
-        opacity={0.045}>
+        opacity={0.06}>
         {dots}
       </Svg>
     </View>
