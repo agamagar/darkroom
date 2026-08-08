@@ -2442,9 +2442,10 @@ const STAMP_PATH = (() => {
   return d;
 })();
 
+const AnimatedG = Animated.createAnimatedComponent(G);
+
 function StampPostmark({ press }: FxProps) {
   const props = useAnimatedProps(() => ({ opacity: press.value * 0.85 }));
-  const AnimatedG = Animated.createAnimatedComponent(G);
   return (
     <AnimatedG animatedProps={props} rotation={-12} origin="200, 30">
       <Circle cx={200} cy={30} r={17} fill="none" stroke="#4636B8"
