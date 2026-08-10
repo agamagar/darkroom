@@ -2010,12 +2010,12 @@ function HologramFx({ press, holdT }: FxProps) {
  * into a streak, fades as it passes the hull, and respawns at home for the
  * next rush. Four rushes per hold cycle, phase-staggered.
  */
-const STARS = (() => {
+function makeStars(count: number) {
   const A1 = 0.7548776662;
   const A2 = 0.5698402909; // R2 sequence
   const cx = FRAME.width / 2;
   const cy = FRAME.height / 2;
-  return Array.from({ length: 44 }, (_, i) => {
+  return Array.from({ length: count }, (_, i) => {
     const x = ((0.5 + (i + 1) * A1) % 1) * FRAME.width;
     const y = ((0.5 + (i + 1) * A2) % 1) * FRAME.height;
     let dx = x - cx;
@@ -2029,7 +2029,12 @@ const STARS = (() => {
       phase: (i * 0.618034) % 1,
     };
   });
-})();
+}
+
+const STARS = makeStars(44);
+/** Hyperspace's jump can afford a denser stream than the resting field —
+ * its streaks have no dot phase, so extra stars cost nothing at rest. */
+const HYPER_STARS = makeStars(72);
 
 function Star({
   star, press, holdT, ambientT, shift,
@@ -2598,7 +2603,7 @@ function CeramicFx(fxp: FxProps) {
  */
 function HyperStar({
   star, press, holdT,
-}: FxProps & { star: (typeof STARS)[number] }) {
+}: FxProps & { star: (typeof HYPER_STARS)[number] }) {
   const props = useAnimatedProps(() => {
     const t = (holdT.value * 4 + star.phase) % 1;
     const rush = Easing.in(Easing.quad)(t);
@@ -2633,7 +2638,7 @@ function HyperspaceFx(fxp: FxProps) {
       </Animated.View>
       <View pointerEvents="none" style={styles.glowLayer}>
         <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-          {STARS.map((star, i) => (
+          {HYPER_STARS.map((star, i) => (
             <HyperStar key={i} star={star} {...fxp} />
           ))}
         </Svg>
