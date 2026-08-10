@@ -40,6 +40,16 @@ export const TYPES = [
   'stamp',
   'ceramic',
   'hyperspace',
+  'mercury',
+  'rake',
+  'sediment',
+  'ferro',
+  'velvet',
+  'thermo',
+  'slosh',
+  'moire',
+  'vacuum',
+  'lenticular',
 ] as const;
 export type Type = (typeof TYPES)[number];
 

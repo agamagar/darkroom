@@ -104,7 +104,17 @@ export type NegotiateButtonVariant =
   | 'pixel'
   | 'stamp'
   | 'ceramic'
-  | 'hyperspace';
+  | 'hyperspace'
+  | 'mercury'
+  | 'rake'
+  | 'sediment'
+  | 'ferro'
+  | 'velvet'
+  | 'thermo'
+  | 'slosh'
+  | 'moire'
+  | 'vacuum'
+  | 'lenticular';
 
 /**
  * Everything that differs between variants, as data. A variant is a row here,
@@ -194,7 +204,17 @@ type VariantSpec = {
     | 'pixel'
     | 'stamp'
     | 'ceramic'
-    | 'hyperspace';
+    | 'hyperspace'
+    | 'mercury'
+    | 'rake'
+    | 'sediment'
+    | 'ferro'
+    | 'velvet'
+    | 'thermo'
+    | 'slosh'
+    | 'moire'
+    | 'vacuum'
+    | 'lenticular';
   /** Label treatment. Gradient is the design's masked fill. */
   label:
     | {
@@ -545,6 +565,76 @@ const VARIANTS: Record<NegotiateButtonVariant, VariantSpec> = {
   hyperspace: {
     pill: { backgroundColor: 'transparent', borderWidth: 0 },
     fx: 'hyperspace',
+    label: { kind: 'solid', color: '#F3F1FE' },
+  },
+
+  /** Liquid chrome: hard reflection bands that pinch toward the touch. */
+  mercury: {
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(206, 199, 251, 0.25)' },
+    fx: 'mercury',
+    label: { kind: 'solid', color: '#181140' },
+  },
+
+  /** A fixed light in the room: tilt slides the specular clean off the pill. */
+  rake: {
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.14)' },
+    fx: 'rake',
+    label: { kind: 'solid', color: '#E7E3FD' },
+  },
+
+  /** Particles that pile at gravity's edge; press puffs them off the finger. */
+  sediment: {
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.12)' },
+    fx: 'sediment',
+    label: { kind: 'solid', color: '#E7E3FD' },
+  },
+
+  /** Ferrofluid: the rim spikes toward the finger, collapsing viscously. */
+  ferro: {
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.2)' },
+    fx: 'ferro',
+    label: { kind: 'solid', color: '#E7E3FD' },
+  },
+
+  /** Velvet nap: dragging a finger brushes the pile lighter. */
+  velvet: {
+    pill: { backgroundColor: '#271D66', borderWidth: 0 },
+    fx: 'velvet',
+    label: { kind: 'solid', color: '#F3F1FE' },
+  },
+
+  /** Thermochromic: holding accumulates heat at the touch; it cools outside-in. */
+  thermo: {
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.12)' },
+    fx: 'thermo',
+    label: { kind: 'solid', color: '#E7E3FD' },
+  },
+
+  /** Half-full of liquid; the surface sloshes with roll, waves off the caps. */
+  slosh: {
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(169, 155, 245, 0.18)' },
+    fx: 'slosh',
+    label: { kind: 'solid', color: '#F3F1FE' },
+  },
+
+  /** Two fine grids, one barely rotated: tilt amplifies into sweeping bands. */
+  moire: {
+    pill: { backgroundColor: '#181140', borderWidth: 0 },
+    fx: 'moire',
+    label: { kind: 'solid', color: '#F3F1FE' },
+  },
+
+  /** A rubber skin: press vacuums it down and relief emerges, lit by tilt. */
+  vacuum: {
+    pill: { backgroundColor: '#271D66', borderColor: 'rgba(169, 155, 245, 0.16)' },
+    fx: 'vacuum',
+    label: { kind: 'solid', color: '#CEC7FB' },
+  },
+
+  /** Lenticular anodize: the surface FLIPS colour with roll, never fades. */
+  lenticular: {
+    pill: { backgroundColor: '#181140', borderColor: 'rgba(206, 199, 251, 0.2)' },
+    fx: 'lenticular',
     label: { kind: 'solid', color: '#F3F1FE' },
   },
 
@@ -1880,6 +1970,16 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
     case 'stamp': return <StampFx {...fxp} />;
     case 'ceramic': return <CeramicFx {...fxp} />;
     case 'hyperspace': return <HyperspaceFx {...fxp} />;
+    case 'mercury': return <MercuryFx {...fxp} />;
+    case 'rake': return <RakeFx {...fxp} />;
+    case 'sediment': return <SedimentFx {...fxp} />;
+    case 'ferro': return <FerroFx {...fxp} />;
+    case 'velvet': return <VelvetFx {...fxp} />;
+    case 'thermo': return <ThermoFx {...fxp} />;
+    case 'slosh': return <SloshFx {...fxp} />;
+    case 'moire': return <MoireFx {...fxp} />;
+    case 'vacuum': return <VacuumFx {...fxp} />;
+    case 'lenticular': return <LenticularFx {...fxp} />;
   }
 }
 
@@ -2671,6 +2771,359 @@ function HyperspaceFx(fxp: FxProps) {
           ))}
         </Svg>
       </View>
+    </>
+  );
+}
+
+/** Liquid chrome: hard horizon bands that pinch toward the finger. */
+function MercuryFx({ press, ambientT, touch }: FxProps) {
+  const M = 80;
+  const style = useAnimatedStyle(() => {
+    const tx = touch?.x.value ?? FRAME.width / 2;
+    return {
+      transform: [
+        {
+          translateX:
+            (FRAME.width / 2 - tx) * 0.18 * press.value +
+            3 * Math.sin(ambientT.value * 2 * Math.PI),
+        },
+        { scaleX: 1 - press.value * 0.06 },
+      ],
+    };
+  });
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+        style={{ position: 'absolute', left: -M, top: -M }}>
+        <Defs>
+          <SvgLinearGradient id="mercuryBands" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#CEC7FB" />
+            <Stop offset="0.34" stopColor="#E7E3FD" />
+            <Stop offset="0.35" stopColor="#F3F1FE" />
+            <Stop offset="0.49" stopColor="#F3F1FE" />
+            <Stop offset="0.5" stopColor="#36298F" />
+            <Stop offset="0.56" stopColor="#271D66" />
+            <Stop offset="0.57" stopColor="#5847D6" />
+            <Stop offset="0.8" stopColor="#8B7CF6" />
+            <Stop offset="1" stopColor="#A99BF5" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+          fill="url(#mercuryBands)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** A hard specular band owned by the ROOM: tilt can slide it off entirely. */
+function RakeFx({ press, shift }: FxProps) {
+  const M = 200;
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (shift?.x.value ?? 0) * 16 },
+      { translateY: (shift?.y.value ?? 0) * 4 },
+      { rotate: '24deg' },
+    ],
+  }));
+  const darken = useAnimatedStyle(() => ({ opacity: press.value * 0.3 }));
+  return (
+    <>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, darken]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000000' }]} />
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+        <Svg width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+          style={{ position: 'absolute', left: -M, top: -M }}>
+          <Defs>
+            <SvgLinearGradient id="rakeBand" x1="0" y1="0.5" x2="1" y2="0.5">
+              <Stop offset="0.46" stopColor="#F3F1FE" stopOpacity={0} />
+              <Stop offset="0.47" stopColor="#F3F1FE" stopOpacity={0.55} />
+              <Stop offset="0.53" stopColor="#F3F1FE" stopOpacity={0.55} />
+              <Stop offset="0.54" stopColor="#F3F1FE" stopOpacity={0} />
+            </SvgLinearGradient>
+          </Defs>
+          <Rect width={FRAME.width + M * 2} height={FRAME.height + M * 2}
+            fill="url(#rakeBand)" />
+        </Svg>
+      </Animated.View>
+    </>
+  );
+}
+
+/** Sixty grains piled at the bottom; tilt slides the bed, press puffs. */
+const GRAINS = Array.from({ length: 60 }, (_, i) => ({
+  x0: ((0.5 + (i + 1) * 0.7548776662) % 1) * (FRAME.width - 30) + 15,
+  h: 3 + ((0.5 + (i + 1) * 0.5698402909) % 1) * 12,
+  r: 0.9 + ((i * 23.6068) % 1) * 1,
+  phase: (i * 0.618034) % 1,
+}));
+
+function Grain({
+  g, press, holdT, shift, touch,
+}: FxProps & { g: (typeof GRAINS)[number] }) {
+  const props = useAnimatedProps(() => {
+    const x = g.x0 + (shift?.x.value ?? 0) * 1.8;
+    const tx = touch?.x.value ?? FRAME.width / 2;
+    const puff =
+      press.value * Math.max(0, 1 - Math.abs(x - tx) / 60) *
+      (16 + 10 * Math.sin(2 * Math.PI * (holdT.value * 2 + g.phase)));
+    return {
+      cx: Math.max(8, Math.min(FRAME.width - 8, x)),
+      cy: 62 - g.h - puff,
+      fillOpacity: 0.5 + g.h / 24,
+    };
+  });
+  return <AnimatedCircle2 r={g.r} fill="#CEC7FB" animatedProps={props} />;
+}
+
+const AnimatedCircle2 = Animated.createAnimatedComponent(Circle);
+
+function SedimentFx(fxp: FxProps) {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {GRAINS.map((g, i) => (
+          <Grain key={i} g={g} {...fxp} />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+/** Ferrofluid: five spikes on the nearest rim, chasing the finger. */
+function FerroSpike({
+  index, press, touch,
+}: FxProps & { index: number }) {
+  const props = useAnimatedProps(() => {
+    const tx = touch?.x.value ?? FRAME.width / 2;
+    const ty = touch?.y.value ?? FRAME.height / 2;
+    const bottom = ty >= FRAME.height / 2;
+    const x = tx + (index - 2) * 15;
+    const amp =
+      press.value * Math.max(0, 1 - Math.abs(index - 2) / 3.2) * 13;
+    const edge = bottom ? FRAME.height - 2 : 2;
+    const tip = bottom ? edge - amp : edge + amp;
+    return {
+      d: `M ${x - 7} ${edge} Q ${x} ${tip} ${x + 7} ${edge} Z`,
+      fillOpacity: press.value * 0.9,
+    };
+  });
+  return <AnimatedPath fill="#5847D6" animatedProps={props} />;
+}
+
+function FerroFx(fxp: FxProps) {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <FerroSpike key={i} index={i} {...fxp} />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+/** Velvet pile: strokes brighten and flip where the finger brushes. */
+const NAP = Array.from({ length: 96 }, (_, i) => ({
+  x: ((0.5 + (i + 1) * 0.7548776662) % 1) * (FRAME.width - 16) + 8,
+  y: ((0.5 + (i + 1) * 0.5698402909) % 1) * (FRAME.height - 16) + 8,
+}));
+
+function NapStroke({
+  n, press, touch,
+}: FxProps & { n: (typeof NAP)[number] }) {
+  const props = useAnimatedProps(() => {
+    const tx = touch?.x.value ?? -999;
+    const ty = touch?.y.value ?? -999;
+    const d = Math.hypot(n.x - tx, n.y - ty);
+    const lit = press.value * Math.max(0, 1 - d / 42);
+    return { strokeOpacity: 0.28 + lit * 0.6 };
+  });
+  return (
+    <AnimatedLine x1={n.x - 2} y1={n.y + 2} x2={n.x + 2} y2={n.y - 2}
+      stroke="#A99BF5" strokeWidth={1.6} strokeLinecap="round"
+      animatedProps={props} />
+  );
+}
+
+function VelvetFx(fxp: FxProps) {
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        {NAP.map((n, i) => (
+          <NapStroke key={i} n={n} {...fxp} />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+
+/** Heat accumulates under the hold and cools outside-in on release. */
+function ThermoFx({ press, touch }: FxProps) {
+  const heat = useSharedValue(0);
+  useAnimatedReaction(
+    () => press.value > 0.05,
+    (active, prev) => {
+      if (active === prev) return;
+      heat.value = withTiming(active ? 1 : 0, {
+        duration: active ? 1500 : 1900,
+        easing: Easing.out(Easing.quad),
+      });
+    },
+  );
+  const style = useAnimatedStyle(() => {
+    const tx = touch?.x.value ?? FRAME.width / 2;
+    const ty = touch?.y.value ?? FRAME.height / 2;
+    return {
+      opacity: heat.value,
+      transform: [
+        { translateX: tx - FRAME.width / 2 },
+        { translateY: ty - FRAME.height / 2 },
+        { scale: 0.25 + heat.value * 0.9 },
+      ],
+    };
+  });
+  return (
+    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <RadialGradient id="thermoBloom" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0" stopColor="#F3F1FE" stopOpacity={0.85} />
+            <Stop offset="0.3" stopColor="#CEC7FB" stopOpacity={0.6} />
+            <Stop offset="0.65" stopColor="#8B7CF6" stopOpacity={0.3} />
+            <Stop offset="1" stopColor="#5847D6" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Ellipse cx={FRAME.width / 2} cy={FRAME.height / 2} rx={120} ry={60}
+          fill="url(#thermoBloom)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+/** Half-full: endpoints ride the roll, the midpoint lags — a real wave. */
+function SloshFx({ press, holdT, shift }: FxProps) {
+  const props = useAnimatedProps(() => {
+    const roll = shift?.x.value ?? 0;
+    const level = 42 - press.value * 12;
+    const yl = level - roll * 1.6;
+    const yr = level + roll * 1.6;
+    const ym =
+      level +
+      roll * -0.9 +
+      Math.sin(holdT.value * 2 * Math.PI * 2) * 4 * press.value;
+    return {
+      d: `M 0 ${FRAME.height} L 0 ${yl} Q ${FRAME.width / 2} ${ym} ${FRAME.width} ${yr} L ${FRAME.width} ${FRAME.height} Z`,
+    };
+  });
+  const lineProps = useAnimatedProps(() => {
+    const roll = shift?.x.value ?? 0;
+    const level = 42 - press.value * 12;
+    return {
+      d: `M 0 ${level - roll * 1.6} Q ${FRAME.width / 2} ${level + roll * -0.9 + Math.sin(holdT.value * 2 * Math.PI * 2) * 4 * press.value} ${FRAME.width} ${level + roll * 1.6}`,
+    };
+  });
+  return (
+    <View pointerEvents="none" style={styles.glowLayer}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <AnimatedPath fill="#36298F" fillOpacity={0.85} animatedProps={props} />
+        <AnimatedPath stroke="#8B7CF6" strokeWidth={1.6} fill="none"
+          strokeOpacity={0.8} animatedProps={lineProps} />
+      </Svg>
+    </View>
+  );
+}
+
+/** Two fine grids; tilt turns fractions of a degree into sweeping bands. */
+function MoireFx({ press, shift }: FxProps) {
+  const lines: number[] = [];
+  for (let y = -20; y < FRAME.height + 20; y += 2.4) lines.push(y);
+  const top = useAnimatedStyle(() => ({
+    transform: [
+      { rotate: `${1.5 + (shift?.x.value ?? 0) * 0.12}deg` },
+      { translateY: (shift?.y.value ?? 0) * 0.4 },
+    ],
+  }));
+  const wide = useAnimatedStyle(() => ({ opacity: press.value }));
+  const grid = (pitch: number, key: string) => (
+    <Svg key={key} width={FRAME.width} height={FRAME.height + 40}
+      style={[styles.glowSvg, { top: -20 }]}>
+      {lines.filter((_, i) => (i * 2.4) % pitch < 2.4).map((y) => (
+        <Line key={y} x1={-20} y1={y} x2={FRAME.width + 20} y2={y}
+          stroke="#A99BF5" strokeOpacity={0.3} strokeWidth={1} />
+      ))}
+    </Svg>
+  );
+  return (
+    <>
+      <View pointerEvents="none" style={styles.glowLayer}>{grid(2.4, 'base')}</View>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, wide]}>
+        {grid(3.2, 'press')}
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, top]}>
+        {grid(2.4, 'top')}
+      </Animated.View>
+    </>
+  );
+}
+
+/** Vacuum-form: press sucks the skin down; tilt is the light that reads it. */
+function VacuumFx({ press, shift }: FxProps) {
+  const hi = useAnimatedStyle(() => ({
+    opacity: press.value * 0.9,
+    transform: [
+      { translateX: -1 - (shift?.x.value ?? 0) * 0.25 },
+      { translateY: -1 - (shift?.y.value ?? 0) * 0.25 },
+    ],
+  }));
+  const lo = useAnimatedStyle(() => ({
+    opacity: press.value * 0.8,
+    transform: [
+      { translateX: 1 + (shift?.x.value ?? 0) * 0.25 },
+      { translateY: 1 + (shift?.y.value ?? 0) * 0.25 },
+    ],
+  }));
+  const glyph = (color: string) => (
+    <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+      <Path d="M 96 40 L 122 22 L 148 40 M 122 22 L 122 50"
+        stroke={color} strokeWidth={5} strokeLinecap="round"
+        strokeLinejoin="round" fill="none" transform="translate(14, 0)" />
+    </Svg>
+  );
+  return (
+    <>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, lo]}>
+        {glyph('#181140')}
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.litLayer, hi]}>
+        {glyph('#CEC7FB')}
+      </Animated.View>
+    </>
+  );
+}
+
+/** Lenticular: the fill FLIPS through the ramp with roll; press advances. */
+function LenticularFx({ press, shift }: FxProps) {
+  const RAMP = ['#A99BF5', '#6D5CF0', '#4636B8', '#CEC7FB'];
+  const mk = (idx: number) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useAnimatedStyle(() => {
+      const roll = shift?.x.value ?? 0;
+      const stepped =
+        (Math.floor((roll + 20) / 5) + Math.round(press.value * 2)) % 4;
+      const active = ((stepped % 4) + 4) % 4 === idx;
+      return { opacity: active ? 0.55 : 0 };
+    });
+  };
+  const s0 = mk(0); const s1 = mk(1); const s2 = mk(2); const s3 = mk(3);
+  return (
+    <>
+      {[s0, s1, s2, s3].map((st, i) => (
+        <Animated.View key={i} pointerEvents="none"
+          style={[styles.litLayer, st]}>
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: RAMP[i] }]} />
+        </Animated.View>
+      ))}
     </>
   );
 }
