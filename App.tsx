@@ -72,8 +72,6 @@ export default function App() {
   // Block first paint until the design's families are in — a flash of the
   // system font on a fidelity bench defeats the bench.
   const [fontsLoaded] = useFonts({
-    'GoogleSansFlex-Light': require('./src/assets/fonts/GoogleSansFlex-Light.ttf'),
-    'GoogleSansFlex-Regular': require('./src/assets/fonts/GoogleSansFlex-Regular.ttf'),
     'StackSansHeadline-Light': require('./src/assets/fonts/StackSansHeadline-Light.ttf'),
   });
 

@@ -1,5 +1,5 @@
 import { BlurView } from 'expo-blur';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path } from 'react-native-svg';
 
 import { theme } from '../theme';
@@ -82,10 +82,9 @@ function FrontCard() {
       <View style={styles.frontCardContent}>
         {/* Airline row — 43:9214: 17.7px mark, 6.6 gap, 11.05 Light #64748B */}
         <View style={styles.airlineRow}>
-          <Image
-            source={require('../assets/etihad-logo.png')}
-            style={styles.airlineLogo}
-          />
+          {/* Airline mark stripped for the public repo (trademarked
+              asset); a neutral disc holds its 17.7pt slot. */}
+          <View style={styles.airlineLogo} />
           <Text style={styles.airlineName}>Etihad Airways</Text>
         </View>
 
@@ -262,6 +261,8 @@ const styles = StyleSheet.create({
   airlineLogo: {
     width: 17.68,
     height: 17.68,
+    borderRadius: 8.84,
+    backgroundColor: '#36298F',
   },
   airlineName: {
     color: '#64748B',

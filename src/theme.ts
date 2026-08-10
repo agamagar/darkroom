@@ -45,8 +45,11 @@ export const theme = {
    * Stack Sans Project repo.
    */
   font: {
-    flexLight: 'GoogleSansFlex-Light',
-    flexRegular: 'GoogleSansFlex-Regular',
+    // Google Sans Flex is Google-proprietary and cannot ship in a public
+    // repo; undefined falls back to the platform font. Drop the instanced
+    // TTFs into src/assets/fonts and restore the names for full fidelity.
+    flexLight: undefined as string | undefined,
+    flexRegular: undefined as string | undefined,
     headlineLight: 'StackSansHeadline-Light',
   },
 } as const;
