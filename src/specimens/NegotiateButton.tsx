@@ -2036,9 +2036,12 @@ function RippleRing({ index, press, holdT }: FxProps & { index: number }) {
     // as it meets the long walls — height capped, width still travelling.
     // The old independent width/height rates stretched the rings into
     // geometrically impossible wavefronts.
-    const r = 3 + grow * 138;
-    const ry = Math.min(r, 31);
-    const hw = Math.min(r, 133);
+    const r = 3 + grow * 142;
+    // Cap at the pill's true half-extents (34 / 136): the wavefront reaches
+    // the walls edge-to-edge, and the pill's own clip trims the stroke — the
+    // old 31/133 caps left a visible 3pt moat all round.
+    const ry = Math.min(r, 34);
+    const hw = Math.min(r, 136);
     return {
       x: FRAME.width / 2 - hw,
       y: FRAME.height / 2 - ry,
