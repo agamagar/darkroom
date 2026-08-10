@@ -24,6 +24,9 @@ import {
   GYROS,
   ICONS,
   INITIAL_SELECTION,
+  RADII,
+  RADIUS_PT,
+  type Radius,
   SCREENS,
   STATES,
   TYPES,
@@ -41,6 +44,7 @@ export default function App() {
   // pane entirely; freeze pins every self-running clock (src/freeze.ts).
   const [chromeHidden, setChromeHidden] = useState(false);
   const [pixelCols, setPixelCols] = useState(34);
+  const [radius, setRadius] = useState<Radius>('full');
   const url = Linking.useURL();
   useEffect(() => {
     if (!url) return;
@@ -94,10 +98,11 @@ export default function App() {
     <NegotiateButton
       // Remounts on selection change so a specimen that pins its press
       // value at mount picks the new one up.
-      key={`${selection.state}-${selection.type}-${selection.icon}`}
+      key={`${selection.state}-${selection.type}-${selection.icon}-${radius}`}
       onPress={() => {}}
       glowShift={glowShift}
       pixelCols={pixelCols}
+      cornerRadius={RADIUS_PT[radius]}
       {...propsFor(selection)}
     />
   );
@@ -181,6 +186,12 @@ export default function App() {
           options={ICONS}
           value={selection.icon}
           onChange={(icon) => setSelection((s) => ({ ...s, icon }))}
+        />
+        <SegmentedRow
+          label="Radius"
+          options={RADII}
+          value={radius}
+          onChange={setRadius}
         />
         <SegmentedRow
           label="Motion"

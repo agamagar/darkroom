@@ -83,6 +83,16 @@ export const GYRO_AMPLITUDE: Record<Gyro, number> = {
 export const ICONS = ['off', 'trend'] as const;
 export type Icon = (typeof ICONS)[number];
 
+/** Corner radius under test: full = the design's stadium, then squarer. */
+export const RADII = ['full', '24', '16', '10'] as const;
+export type Radius = (typeof RADII)[number];
+export const RADIUS_PT: Record<Radius, number> = {
+  full: 34,
+  '24': 24,
+  '16': 16,
+  '10': 10,
+};
+
 export type Selection = {
   state: State;
   type: Type;

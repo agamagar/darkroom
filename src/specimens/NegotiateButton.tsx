@@ -680,6 +680,8 @@ export type NegotiateButtonProps = {
    * the density slider; the 34-column default matches the goldens.
    */
   pixelCols?: number;
+  /** Bench-only: the pill's corner radius in pt (34 = the stadium). */
+  cornerRadius?: number;
   /**
    * Live offset (pt) applied to the glow layers — the bench's gyroscope
    * drives these so the light leans with the device. The pill itself never
@@ -698,6 +700,7 @@ export function NegotiateButton({
   forcePressed = false,
   icon,
   pixelCols = 34,
+  cornerRadius = 34,
   glowShift,
   style,
 }: NegotiateButtonProps) {
@@ -899,7 +902,12 @@ export function NegotiateButton({
           touchX.value = e.nativeEvent.locationX;
           touchY.value = e.nativeEvent.locationY;
         }}
-        style={[styles.pill, spec.pill, disabled && styles.pillDisabled]}>
+        style={[
+          styles.pill,
+          { borderRadius: cornerRadius },
+          spec.pill,
+          disabled && styles.pillDisabled,
+        ]}>
         {spec.violetBase && <VioletBase />}
         {spec.insetThrow && <InsetThrow shift={glowShift} />}
         {/*
@@ -941,7 +949,7 @@ export function NegotiateButton({
         )}
         {spec.neonRing && (
           <>
-            <NeonRing lit={false} />
+            <NeonRing lit={false} cornerRadius={cornerRadius} />
             {/* Plain press opacity, NOT the breathing litStyle: the sink loop
                 is neon's animation, and the system breath sat on top of it,
                 dimming the whole ring stack to 40% mid-cycle — which read as
@@ -949,7 +957,7 @@ export function NegotiateButton({
             <Animated.View
               pointerEvents="none"
               style={[styles.litLayer, litPlainStyle]}>
-              <NeonRing lit press={press} />
+              <NeonRing lit press={press} cornerRadius={cornerRadius} />
             </Animated.View>
           </>
         )}
@@ -983,7 +991,8 @@ export function NegotiateButton({
         {spec.fx && (
           <VariantFx kind={spec.fx} press={press} holdT={holdT}
             ambientT={ambientT} shift={glowShift}
-            touch={{ x: touchX, y: touchY }} pixelCols={pixelCols} />
+            touch={{ x: touchX, y: touchY }} pixelCols={pixelCols}
+            cornerRadius={cornerRadius} />
         )}
         {spec.mesh && (
           <>
@@ -993,7 +1002,7 @@ export function NegotiateButton({
             <Animated.View pointerEvents="none" style={[styles.litLayer, meshParallax]}>
               <DotMesh />
             </Animated.View>
-            <MoltenRim />
+            <MoltenRim cornerRadius={cornerRadius} />
           </>
         )}
         {showIcon && <NegotiateGlyph kind={iconKind} />}
@@ -1012,10 +1021,10 @@ export function NegotiateButton({
         {spec.gradientBorder &&
           (spec.concavePress ? (
             <Animated.View pointerEvents="none" style={[styles.litLayer, dimStyle]}>
-              <GradientBorderRing />
+              <GradientBorderRing cornerRadius={cornerRadius} />
             </Animated.View>
           ) : (
-            <GradientBorderRing />
+            <GradientBorderRing cornerRadius={cornerRadius} />
           ))}
       </Pressable>
     </Animated.View>
@@ -1182,8 +1191,9 @@ const BORDER_ALPHA_STOPS: [number, number][] = [
   [1, 0.45],
 ];
 
-function GradientBorderRing() {
+function GradientBorderRing({ cornerRadius = 34 }: { cornerRadius?: number }) {
   const inset = 0.75; // centre a 1.5pt stroke on the frame edge
+  const rr = Math.max(2, cornerRadius - inset);
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
@@ -1204,7 +1214,7 @@ function GradientBorderRing() {
           y={inset}
           width={FRAME.width - inset * 2}
           height={FRAME.height - inset * 2}
-          rx={(FRAME.height - inset * 2) / 2}
+          rx={rr}
           stroke="url(#borderRing)"
           strokeWidth={1.5}
           fill="none"
@@ -1560,13 +1570,16 @@ function NeonEchoRing({
 function NeonRing({
   lit,
   press,
+  cornerRadius = 34,
 }: {
   lit: boolean;
   press?: SharedValue<number>;
+  cornerRadius?: number;
 }) {
   const inset = 2;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
+  const rr = Math.max(2, cornerRadius - inset);
   const reducedMotion = useReducedMotion() || freeze.current;
   // One clock drives all five rings; their stagger comes from phase offsets.
   // The PRESS owns the clock: press-in starts the loop from zero (echoes
@@ -1597,16 +1610,16 @@ function NeonRing({
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
         {/* Halo first, tube on top: stacked strokes at widening widths stand
             in for a gaussian glow, which SVG strokes cannot have. */}
-        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+        <Rect x={inset} y={inset} width={w} height={h} rx={rr} fill="none"
           stroke={theme.color.glow} strokeOpacity={lit ? 0.5 : 0.22} strokeWidth={9} />
-        <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+        <Rect x={inset} y={inset} width={w} height={h} rx={rr} fill="none"
           stroke={theme.color.indigo400} strokeOpacity={lit ? 0.85 : 0.5} strokeWidth={4.5} />
         {lit ? (
           NEON_ECHOES.map((_, i) => (
             <NeonEchoRing key={i} index={i} t={sinkT} />
           ))
         ) : (
-          <Rect x={inset} y={inset} width={w} height={h} rx={h / 2} fill="none"
+          <Rect x={inset} y={inset} width={w} height={h} rx={rr} fill="none"
             stroke="#CEC7FB" strokeOpacity={0.9} strokeWidth={1.6} />
         )}
       </Svg>
@@ -1728,48 +1741,38 @@ function capsuleRy(x: number): number {
     : BP.fr * Math.sqrt(Math.max(0, 1 - (d / BP.fr) ** 2));
 }
 
-/** A resting station ring; yields to the flow as the press arrives. */
-function BlueprintStaticRing({
-  x, ry, press,
-}: { x: number; ry: number; press: SharedValue<number> }) {
-  const props = useAnimatedProps(() => ({
-    opacity: 0.45 * (1 - press.value),
-  }));
-  return (
-    <AnimatedEllipse cx={x} cy={BP_CY} ry={ry} rx={Math.max(2, ry * 0.3)}
-      fill="none" stroke="#A99BF5" strokeWidth={0.8} animatedProps={props} />
-  );
-}
-
 /**
- * One ring of the pressed-state flow: born at a cap tip, growing to full
- * height as it clears the cap (the capsule's own sqrt profile does the
- * growing), travelling inward, dissolving as it nears the centre. Five per
- * side on staggered phases of the hold clock = a continuous conveyor from
- * both ends for as long as the finger stays down.
+ * One ring population, rest and flow united — the starfield lesson applied
+ * to drafting. Each ring parks at its station; pressing starts the
+ * conveyor, and the ring slides inward from EXACTLY where it stands (at
+ * press-in the travel offset is zero, so there is no swap and no jump),
+ * dissolving as it nears the centre and re-emerging from its cap. Release
+ * and the wrap math walks it back to its station as holdT rewinds.
  */
-function BlueprintFlowRing({
-  side, index, press, holdT,
+function BlueprintRing2({
+  station, press, holdT,
 }: {
-  side: 1 | -1;
-  index: number;
+  station: { x: number; side: 1 | -1; d0: number; pathLen: number };
   press: SharedValue<number>;
   holdT: SharedValue<number>;
 }) {
   const props = useAnimatedProps(() => {
-    const phase = (((holdT.value - index * 0.2) % 1) + 1) % 1;
-    const startX = BP_CAP_L - BP.fr + 4; // just inside the left cap tip
-    const endX = BP_CENTRE - 14;
-    const xL = startX + (endX - startX) * phase;
-    const x = side === 1 ? xL : 2 * BP_CENTRE - xL;
+    const flow =
+      (station.d0 + holdT.value * station.pathLen) % station.pathLen;
+    const startX = BP_CAP_L - BP.fr + 4;
+    const xL = startX + flow;
+    const x = station.side === 1 ? xL : 2 * BP_CENTRE - xL;
     const ry = capsuleRy(xL);
-    const fadeIn = Math.min(1, phase / 0.1);
-    const fadeOut = phase > 0.7 ? 1 - (phase - 0.7) / 0.3 : 1;
+    const t = flow / station.pathLen;
+    // Fades only matter while flowing; at rest (holdT 0) t sits mid-path
+    // for every station, where both ramps evaluate to 1.
+    const born = Math.min(1, t / 0.06 + (1 - press.value));
+    const dying = t > 0.78 ? Math.max(1 - press.value, (1 - t) / 0.22) : 1;
     return {
       cx: x,
       ry,
       rx: Math.max(2, ry * 0.3),
-      opacity: press.value * 0.5 * fadeIn * fadeOut,
+      opacity: 0.45 * Math.min(1, born) * Math.min(1, dying),
     };
   });
   return (
@@ -1798,7 +1801,11 @@ function BlueprintChrome({
   const f = { x: BP.fx, y: 2, w: BP.fw, h: BP.fr * 2 };
   const fr = BP.fr;
 
-  // Resting stations: body rings every ~26pt plus the cap cascades.
+  // Stations: body rings every ~26pt plus the cap cascades. Each becomes a
+  // conveyor rider — d0 is its distance along the flow path, so at holdT 0
+  // the flow position IS the station and the transition has nothing to jump.
+  const startX = BP_CAP_L - fr + 4;
+  const pathLen = BP_CENTRE - 14 - startX;
   const ringXs: number[] = [];
   for (let x = BP_CAP_L; x <= BP_CAP_R; x += 26) ringXs.push(x);
   for (const t of [0.45, 0.72, 0.91]) {
@@ -1806,8 +1813,13 @@ function BlueprintChrome({
     ringXs.push(BP_CAP_R + fr * t);
   }
   const rings = ringXs
-    .map((x) => ({ x, ry: capsuleRy(x) }))
-    .filter((ring) => ring.ry > 5);
+    .filter((x) => capsuleRy(x < BP_CENTRE ? x : 2 * BP_CENTRE - x) > 5 || true)
+    .map((x) => {
+      const side: 1 | -1 = x < BP_CENTRE ? 1 : -1;
+      const xL = side === 1 ? x : 2 * BP_CENTRE - x;
+      return { x, side, d0: Math.max(0, Math.min(pathLen - 0.01, xL - startX)), pathLen };
+    })
+    .filter((r) => capsuleRy(r.side === 1 ? r.x : 2 * BP_CENTRE - r.x) > 5);
 
   // The corner handles — pure annotation — fade out entirely on press.
   const handleFade = useAnimatedStyle(() => ({
@@ -1831,16 +1843,10 @@ function BlueprintChrome({
         </Defs>
 
         <G mask="url(#fadeMask)">
-          {/* Stations at rest; the flow takes over as the press arrives. */}
-          {rings.map(({ x, ry }) => (
-            <BlueprintStaticRing key={x} x={x} ry={ry} press={press} />
+          {rings.map((station) => (
+            <BlueprintRing2 key={station.x} station={station}
+              press={press} holdT={holdT} />
           ))}
-          {([1, -1] as const).map((side) =>
-            [0, 1, 2, 3, 4].map((i) => (
-              <BlueprintFlowRing key={`${side}-${i}`} side={side} index={i}
-                press={press} holdT={holdT} />
-            )),
-          )}
         </G>
       </Svg>
 
@@ -1897,9 +1903,10 @@ function MoltenSpark() {
  * replaced the pill border + separate catch-light pair, which nested two
  * strokes a point apart and read as a double edge.
  */
-function MoltenRim() {
+function MoltenRim({ cornerRadius = 34 }: { cornerRadius?: number }) {
   const inset = 1.2;
   const h = FRAME.height - inset * 2;
+  const rr = Math.max(2, cornerRadius - inset);
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
@@ -1911,7 +1918,7 @@ function MoltenRim() {
           </SvgLinearGradient>
         </Defs>
         <Rect x={inset} y={inset} width={FRAME.width - inset * 2} height={h}
-          rx={h / 2} fill="none" stroke="url(#moltenRim)" strokeWidth={1.2} />
+          rx={rr} fill="none" stroke="url(#moltenRim)" strokeWidth={1.2} />
       </Svg>
     </View>
   );
@@ -1922,6 +1929,7 @@ type FxProps = {
   holdT: SharedValue<number>;
   ambientT: SharedValue<number>;
   pixelCols?: number;
+  cornerRadius?: number;
   shift?: { x: SharedValue<number>; y: SharedValue<number> };
   touch?: { x: SharedValue<number>; y: SharedValue<number> };
 };
@@ -2219,7 +2227,8 @@ function SpotlightFx({ press, shift }: FxProps) {
  * ring is still one stroke and the march is still a dashoffset — same
  * machinery as before, dots instead of dashes.
  */
-function StitchFx({ press, holdT }: FxProps) {
+function StitchFx({ press, holdT, cornerRadius = 34 }: FxProps) {
+  const rr = (inset: number) => Math.max(2, cornerRadius - inset);
   // Dot cycle is 8 (0-length dash + 8 gap); 16 per loop = seamless march.
   const props = useAnimatedProps(() => ({
     strokeDashoffset: -holdT.value * 16 * press.value,
@@ -2230,17 +2239,17 @@ function StitchFx({ press, holdT }: FxProps) {
         {/* Outer beads ride the rim itself — no internal padding; the
             button's edge IS the outer ring. */}
         <AnimatedRect x={2} y={2} width={FRAME.width - 4}
-          height={FRAME.height - 4} rx={(FRAME.height - 4) / 2}
+          height={FRAME.height - 4} rx={rr(2)}
           fill="none" stroke="#CEC7FB" strokeWidth={2.6} strokeLinecap="round"
           strokeDasharray="0.1 8" animatedProps={props} />
         <Rect x={7} y={7} width={FRAME.width - 14} height={FRAME.height - 14}
-          rx={(FRAME.height - 14) / 2} fill="none" stroke="#8B7CF6"
+          rx={rr(7)} fill="none" stroke="#8B7CF6"
           strokeOpacity={0.4} strokeWidth={1.8} strokeLinecap="round"
           strokeDasharray="0.1 8" />
         {/* Third ring: finest beads, quietest, offset half a cycle so its
             dots sit between the inner ring's — three depths of beadwork. */}
         <Rect x={12} y={12} width={FRAME.width - 24} height={FRAME.height - 24}
-          rx={(FRAME.height - 24) / 2} fill="none" stroke="#5847D6"
+          rx={rr(12)} fill="none" stroke="#5847D6"
           strokeOpacity={0.3} strokeWidth={1.2} strokeLinecap="round"
           strokeDasharray="0.1 8" strokeDashoffset={4} />
       </Svg>
@@ -2249,13 +2258,13 @@ function StitchFx({ press, holdT }: FxProps) {
 }
 
 /** Comet: bright head, layered fading tail, orbiting the rim while held. */
-function CometFx({ press, holdT, ambientT, shift }: FxProps) {
+function CometFx({ press, holdT, ambientT, shift, cornerRadius = 34 }: FxProps) {
   const inset = 2;
   const w = FRAME.width - inset * 2;
   const h = FRAME.height - inset * 2;
-  const r = h / 2;
+  const r = Math.max(2, cornerRadius - inset);
   // Perimeter of the stadium rim the comet rides.
-  const P = 2 * (w - 2 * r) + 2 * Math.PI * r;
+  const P = 2 * (w - 2 * r) + 2 * (h - 2 * r) + 2 * Math.PI * r;
   // ONE comet, not three: nine short segments trail the head at stepped
   // offsets, opacity falling on a power curve and colour cooling from white
   // through lilac to indigo. Adjacent segments overlap by 1pt, so they fuse
