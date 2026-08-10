@@ -27,6 +27,18 @@
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "15c78884-03f7-498b-9c1c-0d9e0f2654d6"
+      }
+    },
+    "owner": "agamagar",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/15c78884-03f7-498b-9c1c-0d9e0f2654d6"
+    }
   }
 }
