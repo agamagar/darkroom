@@ -2040,31 +2040,32 @@ function Star({
   star, press, holdT, ambientT, shift,
 }: FxProps & { star: (typeof STARS)[number] }) {
   const props = useAnimatedProps(() => {
-    // Cruise: at rest each star wanders a small lissajous around its home
-    // and twinkles on the ambient clock — space does not hold still. The
-    // wander damps out with the press so the jump departs from (nearly)
-    // where the star was seen.
+    // Cruise: at rest the field FLOWS the same way the jump does — each
+    // star drifts slowly outward from the vanishing point along its own
+    // ray, fading in at birth and out before respawn (one lap per ambient
+    // cycle). Press is not a different motion, just the throttle: the
+    // cruise drift hands off to the rush along the same direction.
     const cruise = 1 - press.value;
-    const wx = 2.6 * Math.sin(2 * Math.PI * (ambientT.value * 2 + star.phase)) * cruise;
-    const wy = 1.6 * Math.sin(2 * Math.PI * (ambientT.value * 3 + star.phase * 2.3)) * cruise;
-    const px = star.x + wx + (shift?.x.value ?? 0) * star.depth * 0.8;
-    const py = star.y + wy + (shift?.y.value ?? 0) * star.depth * 0.8;
+    const restT = (ambientT.value + star.phase) % 1;
+    const cruiseOut = restT * 60 * star.depth * cruise;
     const t = (holdT.value * 4 + star.phase) % 1;
     const rush = Easing.in(Easing.quad)(t);
-    // Scaled by press: at press-in every star departs from ITS OWN dot.
-    const out = rush * 150 * star.depth * press.value;
+    const rushOut = rush * 150 * star.depth * press.value;
+    const out = cruiseOut + rushOut;
+    const px = star.x + star.dx * out + (shift?.x.value ?? 0) * star.depth * 0.8;
+    const py = star.y + star.dy * out + (shift?.y.value ?? 0) * star.depth * 0.8;
     const streak = (3 + rush * 36 * star.depth) * press.value;
-    const hx = px + star.dx * out;
-    const hy = py + star.dy * out;
     const twinkle =
-      0.75 + 0.25 * Math.sin(2 * Math.PI * (ambientT.value * 5 + star.phase * 7));
-    const restOp = (0.3 + star.depth * 0.5) * twinkle;
+      0.8 + 0.2 * Math.sin(2 * Math.PI * (ambientT.value * 5 + star.phase * 7));
+    const born = Math.min(1, restT / 0.12);
+    const dying = restT > 0.82 ? (1 - restT) / 0.18 : 1;
+    const restOp = (0.3 + star.depth * 0.5) * twinkle * born * dying;
     const rushOp = star.depth * Math.min(1, t / 0.12) * (1 - rush * 0.55);
     return {
-      x1: hx - star.dx * streak,
-      y1: hy - star.dy * streak,
-      x2: hx,
-      y2: hy,
+      x1: px - star.dx * streak,
+      y1: py - star.dy * streak,
+      x2: px,
+      y2: py,
       strokeOpacity: restOp * (1 - press.value) + rushOp * press.value,
     };
   });
