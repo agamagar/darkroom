@@ -17,7 +17,7 @@ import { theme } from '../theme';
  * handle is also the clean-screenshot mode.
  */
 
-export const PANEL_HEIGHT = 460;
+export const PANEL_HEIGHT = 520;
 /** How much of the pane stays peeking when collapsed — just the handle. */
 export const PANEL_PEEK = 34;
 

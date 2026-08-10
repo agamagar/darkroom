@@ -1,7 +1,7 @@
 import MaskedView from '@react-native-masked-view/masked-view';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -586,6 +586,11 @@ export type NegotiateButtonProps = {
    */
   icon?: ArrowKind | 'off';
   /**
+   * Bench-only: pixel's grid column count (rows follow the aspect). Drives
+   * the density slider; the 34-column default matches the goldens.
+   */
+  pixelCols?: number;
+  /**
    * Live offset (pt) applied to the glow layers — the bench's gyroscope
    * drives these so the light leans with the device. The pill itself never
    * moves; only its light does.
@@ -602,6 +607,7 @@ export function NegotiateButton({
   haptics = true,
   forcePressed = false,
   icon,
+  pixelCols = 34,
   glowShift,
   style,
 }: NegotiateButtonProps) {
@@ -887,7 +893,7 @@ export function NegotiateButton({
         {spec.fx && (
           <VariantFx kind={spec.fx} press={press} holdT={holdT}
             ambientT={ambientT} shift={glowShift}
-            touch={{ x: touchX, y: touchY }} />
+            touch={{ x: touchX, y: touchY }} pixelCols={pixelCols} />
         )}
         {spec.mesh && (
           <>
@@ -1854,6 +1860,7 @@ type FxProps = {
   press: SharedValue<number>;
   holdT: SharedValue<number>;
   ambientT: SharedValue<number>;
+  pixelCols?: number;
   shift?: { x: SharedValue<number>; y: SharedValue<number> };
   touch?: { x: SharedValue<number>; y: SharedValue<number> };
 };
@@ -2403,16 +2410,29 @@ function GlitchFx(fxp: FxProps) {
  * finger as it drifts, and a per-step hash shimmers the cells inside the
  * halo so the area reads as live static rather than a flat disc.
  */
-const PIXELS = Array.from({ length: 272 }, (_, i) => ({
-  col: i % 34,
-  row: Math.floor(i / 34),
-}));
+type PixelCell = { x: number; y: number; size: number; index: number };
+
+/** Grid for a given column count; rows follow the button's aspect. */
+function makePixelGrid(cols: number): PixelCell[] {
+  const pitch = FRAME.width / cols;
+  const size = pitch - 1;
+  const rows = Math.max(2, Math.round((FRAME.height - 4) / pitch));
+  const y0 = (FRAME.height - rows * pitch) / 2 + 0.5;
+  const cells: PixelCell[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      cells.push({ x: c * pitch, y: y0 + r * pitch, size, index: r * cols + c });
+    }
+  }
+  return cells;
+}
 
 function Pixel({
-  px, index, press, holdT, touch,
-}: FxProps & { px: (typeof PIXELS)[number]; index: number }) {
-  const cx = 0 + px.col * 8 + 3.5;
-  const cy = 2 + px.row * 8 + 3.5;
+  cell, press, holdT, touch,
+}: FxProps & { cell: PixelCell }) {
+  const cx = cell.x + cell.size / 2;
+  const cy = cell.y + cell.size / 2;
+  const index = cell.index;
   const props = useAnimatedProps(() => {
     const tx = touch?.x.value ?? FRAME.width / 2;
     const ty = touch?.y.value ?? FRAME.height / 2;
@@ -2426,17 +2446,22 @@ function Pixel({
     return { fillOpacity: 0.07 + press.value * fall * shimmer * 0.8 };
   });
   return (
-    <AnimatedRect x={0 + px.col * 8} y={2 + px.row * 8} width={7}
-      height={7} rx={1.2} fill="#8B7CF6" animatedProps={props} />
+    <AnimatedRect x={cell.x} y={cell.y} width={cell.size} height={cell.size}
+      rx={Math.min(1.5, cell.size * 0.18)} fill="#8B7CF6"
+      animatedProps={props} />
   );
 }
 
 function PixelFx(fxp: FxProps) {
+  const cells = useMemo(
+    () => makePixelGrid(fxp.pixelCols ?? 34),
+    [fxp.pixelCols],
+  );
   return (
     <View pointerEvents="none" style={styles.glowLayer}>
       <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-        {PIXELS.map((px, i) => (
-          <Pixel key={i} px={px} index={i} {...fxp} />
+        {cells.map((cell) => (
+          <Pixel key={`${cells.length}-${cell.index}`} cell={cell} {...fxp} />
         ))}
       </Svg>
     </View>

@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { BenchPanel, PANEL_HEIGHT, PANEL_PEEK } from './src/bench/BenchSheet';
+import { DensitySlider } from './src/bench/DensitySlider';
 import {
   DESIGN_FRAME,
   SPECIMEN_SLOT,
@@ -39,6 +40,7 @@ export default function App() {
   // &freeze=1 steers the bench from a script. chrome=off drops the control
   // pane entirely; freeze pins every self-running clock (src/freeze.ts).
   const [chromeHidden, setChromeHidden] = useState(false);
+  const [pixelCols, setPixelCols] = useState(34);
   const url = Linking.useURL();
   useEffect(() => {
     if (!url) return;
@@ -97,6 +99,7 @@ export default function App() {
       key={`${selection.state}-${selection.type}-${selection.icon}`}
       onPress={() => {}}
       glowShift={glowShift}
+      pixelCols={pixelCols}
       {...propsFor(selection)}
     />
   );
@@ -187,6 +190,9 @@ export default function App() {
           value={selection.gyro}
           onChange={(gyro) => setSelection((s) => ({ ...s, gyro }))}
         />
+        {selection.type === 'pixel' && (
+          <DensitySlider value={pixelCols} onCommit={setPixelCols} />
+        )}
       </BenchPanel>
       )}
     </GestureHandlerRootView>
