@@ -1809,11 +1809,7 @@ function BlueprintChrome({
     .map((x) => ({ x, ry: capsuleRy(x) }))
     .filter((ring) => ring.ry > 5);
 
-  // The silhouette stays through the hold (dimmed) so the flow lives inside
-  // a pill; the corner handles — pure annotation — fade out entirely.
-  const silhouetteFade = useAnimatedStyle(() => ({
-    opacity: 1 - 0.55 * press.value,
-  }));
+  // The corner handles — pure annotation — fade out entirely on press.
   const handleFade = useAnimatedStyle(() => ({
     opacity: 1 - press.value,
   }));
@@ -1848,31 +1844,6 @@ function BlueprintChrome({
         </G>
       </Svg>
 
-      <Animated.View
-        pointerEvents="none"
-        style={[StyleSheet.absoluteFill, silhouetteFade]}>
-        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-          <Defs>
-            {/* Own copy of the fade — RN-SVG cannot reference another
-                svg's defs, and the silhouette should dissolve at the
-                centre like every other construction line. */}
-            <RadialGradient id="lineFadeSil" cx="50%" cy="50%" rx="52%" ry="72%">
-              <Stop offset="0" stopColor="#000000" />
-              <Stop offset="0.38" stopColor="#000000" />
-              <Stop offset="0.85" stopColor="#FFFFFF" />
-              <Stop offset="1" stopColor="#FFFFFF" />
-            </RadialGradient>
-            <Mask id="fadeMaskSil">
-              <Rect width={FRAME.width} height={FRAME.height}
-                fill="url(#lineFadeSil)" />
-            </Mask>
-          </Defs>
-          <G mask="url(#fadeMaskSil)">
-            <Rect x={f.x} y={f.y} width={f.w} height={f.h} rx={fr} fill="none"
-              stroke={c} strokeOpacity={0.75} strokeWidth={1} />
-          </G>
-        </Svg>
-      </Animated.View>
       <Animated.View
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, handleFade]}>
@@ -1983,35 +1954,56 @@ function VariantFx({ kind, ...fxp }: FxProps & { kind: NonNullable<VariantSpec['
   }
 }
 
-/** One aurora curtain: a soft vertical gradient band, drifting. */
+/**
+ * One aurora curtain as nature draws it: a WAVY vertical band — both edges
+ * are sines, phase-shifted so the band's width breathes along its length —
+ * filled with a soft horizontal gradient that is transparent at both edges,
+ * so the light has no boundary and melts into the sky behind it. The wave
+ * crawls on the hold clock and the whole curtain sways with tilt.
+ */
 function AuroraCurtain({
-  x0, width, color, rate, phase, press, holdT, shift,
+  x0, width, color, rate, phase, press, holdT, ambientT, shift,
 }: FxProps & { x0: number; width: number; color: string; rate: number; phase: number }) {
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateX:
-          (shift?.x.value ?? 0) * rate +
-          Math.sin((holdT.value + phase) * 2 * Math.PI) * 14 * press.value,
-      },
-    ],
+  const props = useAnimatedProps(() => {
+    const t = holdT.value + ambientT.value * 0.35 + phase;
+    // Left edge: a sine down the height; right edge: same sine, shifted —
+    // the band narrows and widens as real curtains fold.
+    const pts: string[] = [];
+    const N = 7;
+    for (let i = 0; i <= N; i++) {
+      const y = (i / N) * (FRAME.height + 16) - 8;
+      const wob =
+        10 * Math.sin(2 * Math.PI * (t * 1.2 + i * 0.16)) +
+        4 * Math.sin(2 * Math.PI * (t * 2.1 + i * 0.31));
+      pts.push(`${i === 0 ? 'M' : 'L'} ${x0 + wob} ${y}`);
+    }
+    for (let i = N; i >= 0; i--) {
+      const y = (i / N) * (FRAME.height + 16) - 8;
+      const wob =
+        10 * Math.sin(2 * Math.PI * (t * 1.2 + i * 0.16 + 0.22)) +
+        4 * Math.sin(2 * Math.PI * (t * 2.1 + i * 0.31 + 0.4));
+      pts.push(`L ${x0 + width + wob} ${y}`);
+    }
+    return { d: pts.join(' ') + ' Z' };
+  });
+  const sway = useAnimatedStyle(() => ({
+    transform: [{ translateX: (shift?.x.value ?? 0) * rate }],
+    opacity: 0.75 + press.value * 0.25,
   }));
-  const id = `aur-${color.replace('#', '')}-${x0}`;
+  const id = `aurW-${color.slice(1)}-${x0}`;
   return (
-    <Animated.View pointerEvents="none" style={[styles.litLayer, style]}>
-      <View pointerEvents="none" style={styles.glowLayer}>
-        <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
-          <Defs>
-            <SvgLinearGradient id={id} x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0" stopColor={color} stopOpacity={0} />
-              <Stop offset="0.5" stopColor={color} stopOpacity={0.4} />
-              <Stop offset="1" stopColor={color} stopOpacity={0} />
-            </SvgLinearGradient>
-          </Defs>
-          <Rect x={x0} y={-8} width={width} height={FRAME.height + 16}
-            fill={`url(#${id})`} />
-        </Svg>
-      </View>
+    <Animated.View pointerEvents="none" style={[styles.litLayer, sway]}>
+      <Svg width={FRAME.width} height={FRAME.height} style={styles.glowSvg}>
+        <Defs>
+          <SvgLinearGradient id={id} x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor={color} stopOpacity={0} />
+            <Stop offset="0.35" stopColor={color} stopOpacity={0.26} />
+            <Stop offset="0.65" stopColor={color} stopOpacity={0.26} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
+        <AnimatedPath fill={`url(#${id})`} animatedProps={props} />
+      </Svg>
     </Animated.View>
   );
 }
@@ -2019,9 +2011,9 @@ function AuroraCurtain({
 function AuroraFx(fxp: FxProps) {
   return (
     <>
-      <AuroraCurtain {...fxp} x0={30} width={80} color="#CEC7FB" rate={0.5} phase={0} />
-      <AuroraCurtain {...fxp} x0={110} width={100} color="#8B7CF6" rate={0.9} phase={0.33} />
-      <AuroraCurtain {...fxp} x0={180} width={70} color="#8B7CF6" rate={1.4} phase={0.66} />
+      <AuroraCurtain {...fxp} x0={26} width={78} color="#CEC7FB" rate={0.5} phase={0} />
+      <AuroraCurtain {...fxp} x0={104} width={96} color="#8B7CF6" rate={0.9} phase={0.33} />
+      <AuroraCurtain {...fxp} x0={176} width={70} color="#6D5CF0" rate={1.4} phase={0.66} />
     </>
   );
 }
@@ -2045,11 +2037,10 @@ function RippleRing({ index, press, holdT }: FxProps & { index: number }) {
       width: hw * 2,
       height: ry * 2,
       rx: ry,
-      // Born invisible at the centre, gaining light as it expands — then
-      // dying over the last 15% of travel, so a full-size ring never sits
-      // against the rim reading as a second outline.
-      strokeOpacity:
-        press.value * 0.55 * grow * (grow > 0.85 ? (1 - grow) / 0.15 : 1),
+      // A smooth bell: exactly 0% at birth AND at death, peaking mid-
+      // travel — sin(pi*t) gives the whole lifecycle one curve with no
+      // corners, and a ring never sits against the rim visible.
+      strokeOpacity: press.value * 0.55 * Math.sin(Math.PI * grow),
     };
   });
   return (
