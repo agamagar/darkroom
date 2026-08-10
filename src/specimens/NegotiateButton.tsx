@@ -2397,26 +2397,28 @@ function GlitchFx(fxp: FxProps) {
 }
 
 /**
- * A 24x6 grid (144 cells at 10pt). The pixels light around the TOUCH, not
+ * A 34x8 grid (272 cells at 7pt). The pixels light around the TOUCH, not
  * randomly: each cell's brightness falls off with its distance from the
  * finger (radius breathing on the hold clock), the lit region follows the
  * finger as it drifts, and a per-step hash shimmers the cells inside the
  * halo so the area reads as live static rather than a flat disc.
  */
-const PIXELS = Array.from({ length: 144 }, (_, i) => ({
-  col: i % 24,
-  row: Math.floor(i / 24),
+const PIXELS = Array.from({ length: 272 }, (_, i) => ({
+  col: i % 34,
+  row: Math.floor(i / 34),
 }));
 
 function Pixel({
   px, index, press, holdT, touch,
 }: FxProps & { px: (typeof PIXELS)[number]; index: number }) {
-  const cx = 1 + px.col * 11.3 + 5;
-  const cy = 1 + px.row * 11 + 5;
+  const cx = 0 + px.col * 8 + 3.5;
+  const cy = 2 + px.row * 8 + 3.5;
   const props = useAnimatedProps(() => {
     const tx = touch?.x.value ?? FRAME.width / 2;
     const ty = touch?.y.value ?? FRAME.height / 2;
     const d = Math.hypot(cx - tx, cy - ty);
+    // 272 cells: bail before the hash for anything the halo cannot reach.
+    if (d > 64) return { fillOpacity: 0.07 };
     const radius = 48 + 12 * Math.sin(holdT.value * 2 * Math.PI * 2);
     const fall = Math.max(0, 1 - d / radius);
     const step = Math.floor(holdT.value * 8);
@@ -2424,8 +2426,8 @@ function Pixel({
     return { fillOpacity: 0.07 + press.value * fall * shimmer * 0.8 };
   });
   return (
-    <AnimatedRect x={1 + px.col * 11.3} y={1 + px.row * 11} width={10}
-      height={10} rx={1.5} fill="#8B7CF6" animatedProps={props} />
+    <AnimatedRect x={0 + px.col * 8} y={2 + px.row * 8} width={7}
+      height={7} rx={1.2} fill="#8B7CF6" animatedProps={props} />
   );
 }
 
